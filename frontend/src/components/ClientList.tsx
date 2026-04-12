@@ -12,7 +12,7 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 
 interface Client {
-  id: int
+  id: number
   first_name: string
   last_name: string
   email: string

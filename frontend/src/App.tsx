@@ -1,14 +1,15 @@
+import React from "react"
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import Login from "./pages/Login"
 import ClientList from "./components/ClientList"
 
 // Simple component to protect routes
-const ProtectedRoute = ({ children }: { children: JSX.Element }) => {
+const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem("token")
   if (!token) {
     return <Navigate to="/login" replace />
   }
-  return children
+  return <>{children}</>
 }
 
 function App() {
