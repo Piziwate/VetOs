@@ -1,6 +1,5 @@
 import * as React from "react"
 import { useParams, Link } from "react-router-dom"
-import { useTranslation } from "react-i18next"
 import { ChevronLeft, Mail, Phone, MapPin, PawPrint, User } from "lucide-react"
 import api from "@/lib/api"
 
@@ -44,7 +43,6 @@ interface Client {
 
 export function ClientDetail() {
   const { id } = useParams<{ id: string }>()
-  const { t } = useTranslation()
   const [client, setClient] = React.useState<Client | null>(null)
   const [loading, setLoading] = React.useState(true)
 
