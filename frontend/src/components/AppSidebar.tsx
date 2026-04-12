@@ -10,6 +10,7 @@ import {
   User2,
 } from "lucide-react"
 import { useNavigate, useLocation } from "react-router-dom"
+import { useTranslation } from "react-i18next"
 
 import {
   Sidebar,
@@ -31,21 +32,22 @@ import {
 } from "@/components/ui/dropdown-menu"
 import LanguageSwitcher from "./LanguageSwitcher"
 
-const items = [
-  { title: "Dashboard", url: "/", icon: LayoutDashboard },
-  { title: "Clients", url: "/clients", icon: Users },
-  { title: "Patients", url: "/patients", icon: PawPrint },
-]
-
-const adminItems = [
-  { title: "Consultations", url: "/consultations", icon: Stethoscope },
-  { title: "Billing", url: "/billing", icon: CreditCard },
-  { title: "Settings", url: "/settings", icon: Settings },
-]
-
 export function AppSidebar() {
+  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
+
+  const items = [
+    { title: t('menu.dashboard'), url: "/", icon: LayoutDashboard },
+    { title: t('menu.clients'), url: "/clients", icon: Users },
+    { title: t('menu.patients'), url: "/patients", icon: PawPrint },
+  ]
+
+  const adminItems = [
+    { title: t('menu.consultations'), url: "/consultations", icon: Stethoscope },
+    { title: t('menu.billing'), url: "/billing", icon: CreditCard },
+    { title: t('menu.settings'), url: "/settings", icon: Settings },
+  ]
 
   const handleLogout = () => {
     localStorage.removeItem("token")
@@ -59,13 +61,13 @@ export function AppSidebar() {
           <div className="h-8 w-8 rounded-lg bg-primary flex items-center justify-center text-primary-foreground shrink-0">
             V
           </div>
-          <span className="truncate group-data-[collapsible=icon]:hidden">VetOS</span>
+          <span className="truncate group-data-[collapsible=icon]:hidden">{t('app_name')}</span>
         </div>
       </SidebarHeader>
       
       <SidebarContent>
         <SidebarGroup>
-          <SidebarGroupLabel>Main</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('menu.group_main')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {items.map((item) => (
@@ -87,7 +89,7 @@ export function AppSidebar() {
         </SidebarGroup>
 
         <SidebarGroup>
-          <SidebarGroupLabel>Administration</SidebarGroupLabel>
+          <SidebarGroupLabel>{t('menu.group_admin')}</SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
               {adminItems.map((item) => (
@@ -133,11 +135,11 @@ export function AppSidebar() {
                   className="w-[--radix-dropdown-menu-trigger-width] min-w-56 rounded-lg"
                   align="start"
                 >
-                  <DropdownMenuItem>Profile</DropdownMenuItem>
-                  <DropdownMenuItem>Account</DropdownMenuItem>
+                  <DropdownMenuItem>{t('menu.profile')}</DropdownMenuItem>
+                  <DropdownMenuItem>{t('menu.account')}</DropdownMenuItem>
                   <DropdownMenuItem onClick={handleLogout} className="text-destructive focus:text-destructive">
                     <LogOut className="mr-2 h-4 w-4" />
-                    Log out
+                    {t('menu.logout')}
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>

@@ -13,25 +13,29 @@ interface LayoutProps {
 export default function Layout({ children }: LayoutProps) {
   return (
     <SidebarProvider>
-      <AppSidebar />
-      <SidebarInset className="bg-background">
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
-          <div className="flex items-center gap-2">
-            <SidebarTrigger className="-ml-1" />
-            <Separator orientation="vertical" className="mr-2 h-4" />
-            <Breadcrumbs />
-          </div>
-          <div className="ml-auto flex items-center gap-4">
-            <CommandMenu />
-            <ThemeToggle />
-          </div>
-        </header>
-        <main className="flex flex-1 flex-col gap-4 p-6 pt-4">
-          <div className="mx-auto w-full max-w-7xl">
-            {children}
-          </div>
-        </main>
-      </SidebarInset>
+      <div className="flex min-h-screen w-full">
+        <AppSidebar />
+        <SidebarInset className="flex flex-col flex-1 min-w-0 bg-background overflow-hidden">
+          <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 bg-card/50 backdrop-blur sticky top-0 z-10">
+            <div className="flex items-center gap-2">
+              <SidebarTrigger className="-ml-1" />
+              <Separator orientation="vertical" className="mr-2 h-4 hidden sm:block" />
+              <div className="hidden sm:block">
+                <Breadcrumbs />
+              </div>
+            </div>
+            <div className="ml-auto flex items-center gap-2 sm:gap-4">
+              <CommandMenu />
+              <ThemeToggle />
+            </div>
+          </header>
+          <main className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8 bg-muted/20">
+            <div className="mx-auto w-full max-w-7xl h-full">
+              {children}
+            </div>
+          </main>
+        </SidebarInset>
+      </div>
     </SidebarProvider>
   )
 }
