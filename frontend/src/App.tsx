@@ -2,9 +2,11 @@ import React from "react"
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
 import "./i18n"
 import { ThemeProvider } from "./components/theme-provider"
+import { TooltipProvider } from "@/components/ui/tooltip"
 import Login from "./pages/Login"
 import ClientList from "./components/ClientList"
 import Layout from "./components/Layout"
+import { Users, PawPrint, CreditCard, Activity } from "lucide-react"
 
 // Simple component to protect routes
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -18,59 +20,132 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 function App() {
   return (
     <ThemeProvider defaultTheme="light" storageKey="vetos-ui-theme">
-      <Router>
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          
-          <Route 
-            path="/" 
-            element={
-              <ProtectedRoute>
-                <div className="space-y-6">
-                  <header>
-                    <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-                    <p className="text-muted-foreground mt-1">
-                      Welcome to your practice overview.
-                    </p>
-                  </header>
-                  <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                    {/* Placeholder stats cards for "pop" effect */}
-                    <div className="rounded-xl border bg-card p-6 shadow-sm">
-                      <p className="text-sm font-medium text-muted-foreground">Total Clients</p>
-                      <h3 className="text-2xl font-bold mt-2">--</h3>
+      <TooltipProvider>
+        <Router>
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            
+            <Route 
+              path="/" 
+              element={
+                <ProtectedRoute>
+                  <div className="space-y-6">
+                    <div className="flex items-center justify-between">
+                      <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
                     </div>
-                    <div className="rounded-xl border bg-card p-6 shadow-sm">
-                      <p className="text-sm font-medium text-muted-foreground">Patients Active</p>
-                      <h3 className="text-2xl font-bold mt-2">--</h3>
+                    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+                      <div className="rounded-xl border bg-card p-6 shadow-sm ring-1 ring-border/5">
+                        <div className="flex items-center gap-4">
+                          <div className="p-2 bg-primary/5 rounded-lg text-primary">
+                            <Users className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Total Clients</p>
+                            <h3 className="text-2xl font-bold">1,284</h3>
+                          </div>
+                        </div>
+                        <div className="mt-4 flex items-center text-xs text-green-600 font-medium">
+                          <Activity className="h-3 w-3 mr-1" /> +12% from last month
+                        </div>
+                      </div>
+                      
+                      <div className="rounded-xl border bg-card p-6 shadow-sm ring-1 ring-border/5">
+                        <div className="flex items-center gap-4">
+                          <div className="p-2 bg-primary/5 rounded-lg text-primary">
+                            <PawPrint className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Patients</p>
+                            <h3 className="text-2xl font-bold">3,450</h3>
+                          </div>
+                        </div>
+                        <div className="mt-4 flex items-center text-xs text-green-600 font-medium">
+                          <Activity className="h-3 w-3 mr-1" /> +5% new records
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border bg-card p-6 shadow-sm ring-1 ring-border/5">
+                        <div className="flex items-center gap-4">
+                          <div className="p-2 bg-primary/5 rounded-lg text-primary">
+                            <CreditCard className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Monthly Revenue</p>
+                            <h3 className="text-2xl font-bold">CHF 12.5k</h3>
+                          </div>
+                        </div>
+                        <div className="mt-4 flex items-center text-xs text-red-600 font-medium">
+                          <Activity className="h-3 w-3 mr-1" /> -2% vs target
+                        </div>
+                      </div>
+
+                      <div className="rounded-xl border bg-card p-6 shadow-sm ring-1 ring-border/5">
+                        <div className="flex items-center gap-4">
+                          <div className="p-2 bg-primary/5 rounded-lg text-primary">
+                            <Activity className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <p className="text-sm font-medium text-muted-foreground">Today's Visits</p>
+                            <h3 className="text-2xl font-bold">18</h3>
+                          </div>
+                        </div>
+                        <div className="mt-4 flex items-center text-xs text-muted-foreground font-medium">
+                          Next appointment at 14:30
+                        </div>
+                      </div>
                     </div>
-                    <div className="rounded-xl border bg-card p-6 shadow-sm">
-                      <p className="text-sm font-medium text-muted-foreground">Pending Invoices</p>
-                      <h3 className="text-2xl font-bold mt-2">--</h3>
+                    
+                    <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-7">
+                      <div className="col-span-4 rounded-xl border bg-card shadow-sm p-6">
+                        <h3 className="font-semibold mb-4">Recent Activity</h3>
+                        <div className="h-[300px] flex items-center justify-center border-2 border-dashed rounded-lg text-muted-foreground text-sm">
+                          Activity chart placeholder
+                        </div>
+                      </div>
+                      <div className="col-span-3 rounded-xl border bg-card shadow-sm p-6">
+                        <h3 className="font-semibold mb-4">Quick Actions</h3>
+                        <div className="space-y-4">
+                          <div className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors flex items-center justify-between">
+                            <div className="flex items-center gap-3 text-sm">
+                              <PawPrint className="h-4 w-4 text-primary" />
+                              <span>Register New Patient</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground font-mono">N P</span>
+                          </div>
+                          <div className="p-3 border rounded-lg hover:bg-muted/50 cursor-pointer transition-colors flex items-center justify-between">
+                            <div className="flex items-center gap-3 text-sm">
+                              <Users className="h-4 w-4 text-primary" />
+                              <span>Add New Client</span>
+                            </div>
+                            <span className="text-xs text-muted-foreground font-mono">N C</span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              </ProtectedRoute>
-            } 
-          />
+                </ProtectedRoute>
+              } 
+            />
 
-          <Route 
-            path="/clients" 
-            element={
-              <ProtectedRoute>
-                <ClientList />
-              </ProtectedRoute>
-            } 
-          />
+            <Route 
+              path="/clients" 
+              element={
+                <ProtectedRoute>
+                  <ClientList />
+                </ProtectedRoute>
+              } 
+            />
 
-          {/* Fallback routes */}
-          <Route path="/patients" element={<ProtectedRoute><div>Patients Management Coming Soon</div></ProtectedRoute>} />
-          <Route path="/consultations" element={<ProtectedRoute><div>Consultations Management Coming Soon</div></ProtectedRoute>} />
-          <Route path="/billing" element={<ProtectedRoute><div>Billing Management Coming Soon</div></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><div>Settings Coming Soon</div></ProtectedRoute>} />
-          
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </Router>
+            {/* Fallback routes */}
+            <Route path="/patients" element={<ProtectedRoute><div>Patients Management Coming Soon</div></ProtectedRoute>} />
+            <Route path="/consultations" element={<ProtectedRoute><div>Consultations Management Coming Soon</div></ProtectedRoute>} />
+            <Route path="/billing" element={<ProtectedRoute><div>Billing Management Coming Soon</div></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><div>Settings Coming Soon</div></ProtectedRoute>} />
+            
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </Router>
+      </TooltipProvider>
     </ThemeProvider>
   )
 }

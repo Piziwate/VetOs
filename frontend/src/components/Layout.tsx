@@ -1,8 +1,10 @@
 import React from "react"
-import Sidebar from "./Sidebar"
+import { SidebarProvider, SidebarTrigger, SidebarInset } from "@/components/ui/sidebar"
+import { AppSidebar } from "./AppSidebar"
 import { ThemeToggle } from "./ThemeToggle"
 import Breadcrumbs from "./Breadcrumbs"
 import { CommandMenu } from "./CommandMenu"
+import { Separator } from "./ui/separator"
 
 interface LayoutProps {
   children: React.ReactNode
@@ -10,27 +12,26 @@ interface LayoutProps {
 
 export default function Layout({ children }: LayoutProps) {
   return (
-    <div className="flex min-h-screen w-full bg-background font-sans antialiased">
-      <Sidebar />
-      <div className="flex flex-col flex-1 min-w-0 overflow-hidden">
-        <header className="flex h-16 items-center justify-between border-b px-8 bg-card shadow-sm shrink-0">
-          <div className="flex items-center gap-8">
-            <h2 className="text-lg font-bold tracking-tight text-primary hidden md:block">
-              VetOS
-            </h2>
-            <CommandMenu />
+    <SidebarProvider>
+      <AppSidebar />
+      <SidebarInset className="bg-background">
+        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4 transition-[width,height] ease-linear group-has-[[data-collapsible=icon]]/sidebar-wrapper:h-12">
+          <div className="flex items-center gap-2">
+            <SidebarTrigger className="-ml-1" />
+            <Separator orientation="vertical" className="mr-2 h-4" />
+            <Breadcrumbs />
           </div>
-          <div className="flex items-center gap-4">
+          <div className="ml-auto flex items-center gap-4">
+            <CommandMenu />
             <ThemeToggle />
           </div>
         </header>
-        <main className="flex-1 overflow-auto p-8 bg-muted/30">
-          <div className="mx-auto max-w-7xl">
-            <Breadcrumbs />
+        <main className="flex flex-1 flex-col gap-4 p-6 pt-4">
+          <div className="mx-auto w-full max-w-7xl">
             {children}
           </div>
         </main>
-      </div>
-    </div>
+      </SidebarInset>
+    </SidebarProvider>
   )
 }
