@@ -1,7 +1,6 @@
 import React from "react"
 import Sidebar from "./Sidebar"
 import { ThemeToggle } from "./ThemeToggle"
-import { useTranslation } from "react-i18next"
 import Breadcrumbs from "./Breadcrumbs"
 import { CommandMenu } from "./CommandMenu"
 
@@ -10,8 +9,6 @@ interface LayoutProps {
 }
 
 export default function Layout({ children }: LayoutProps) {
-  const { t } = useTranslation()
-
   return (
     <div className="flex min-h-screen w-full bg-background font-sans antialiased">
       <Sidebar />

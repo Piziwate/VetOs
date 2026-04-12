@@ -3,7 +3,7 @@ from sqlalchemy.future import select
 from typing import List, Optional
 from app.models.client import Client
 from app.models.patient import Patient
-from app.schemas.client_patient import ClientCreate, ClientUpdate, PatientCreate, PatientUpdate
+from app.schemas.client_patient import ClientCreate, ClientUpdate, PatientCreate
 
 class CRUDClient:
     async def get(self, db: AsyncSession, id: int) -> Optional[Client]:

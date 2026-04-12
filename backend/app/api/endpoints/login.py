@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.api.deps import get_db
 from app.services.crud_user import user as crud_user
-from app.schemas.user_token import Token, User
+from app.schemas.user_token import Token
 from app.core import security
 from app.core.config import settings
 

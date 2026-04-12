@@ -1,7 +1,5 @@
 import asyncio
 import logging
-import os
-from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import AsyncSessionLocal
 from app.services.crud_user import user as crud_user
 from app.schemas.user_token import UserCreate

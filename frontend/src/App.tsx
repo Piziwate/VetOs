@@ -1,6 +1,5 @@
 import React from "react"
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
-import { useTranslation } from "react-i18next"
 import "./i18n"
 import { ThemeProvider } from "./components/theme-provider"
 import Login from "./pages/Login"
@@ -17,8 +16,6 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 }
 
 function App() {
-  const { t } = useTranslation()
-
   return (
     <ThemeProvider defaultTheme="light" storageKey="vetos-ui-theme">
       <Router>

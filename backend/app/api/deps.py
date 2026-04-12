@@ -1,4 +1,3 @@
-from typing import Generator, Optional
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer
 from jose import jwt
@@ -6,7 +5,6 @@ from pydantic import ValidationError
 from sqlalchemy.ext.asyncio import AsyncSession
 from app.db.session import get_db
 from app.core.config import settings
-from app.core import security
 from app.schemas.user_token import TokenPayload
 from app.services.crud_user import user as crud_user
 from app.models.user import User

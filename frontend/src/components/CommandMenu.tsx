@@ -1,17 +1,11 @@
 import * as React from "react"
 import { useNavigate } from "react-router-dom"
 import {
-  Calculator,
-  Calendar,
-  CreditCard,
-  Settings,
-  Smile,
   User,
   Users,
   PawPrint,
   Plus,
-  Search,
-  Keyboard,
+  Settings,
 } from "lucide-react"
 
 import {
@@ -82,7 +76,7 @@ export function CommandMenu() {
               <span>Patients</span>
               <CommandShortcut>G P</CommandShortcut>
             </CommandItem>
-          </nav>
+          </CommandGroup>
           <CommandSeparator />
           <CommandGroup heading="Actions">
             <CommandItem onSelect={() => { /* Toggle Add Client Dialog somehow */ setOpen(false); }}>

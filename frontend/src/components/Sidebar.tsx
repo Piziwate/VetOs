@@ -5,12 +5,10 @@ import {
   Stethoscope, 
   CreditCard, 
   Settings, 
-  LogOut,
-  Menu
+  LogOut
 } from "lucide-react"
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
-import { useTranslation } from "react-i18next"
 import { useNavigate, useLocation } from "react-router-dom"
 import { Separator } from "@/components/ui/separator"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
@@ -26,7 +24,6 @@ const menuItems = [
 ]
 
 export default function Sidebar() {
-  const { t } = useTranslation()
   const navigate = useNavigate()
   const location = useLocation()
 

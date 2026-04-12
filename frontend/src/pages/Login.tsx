@@ -45,8 +45,12 @@ export default function Login() {
       const response = await axios.post("http://localhost:8000/api/v1/login/access-token", formData)
       localStorage.setItem("token", response.data.access_token)
       navigate("/")
-    } catch (err: any) {
-      setError(err.response?.data?.detail || "Failed to login")
+    } catch (err: unknown) {
+      if (axios.isAxiosError(err)) {
+        setError(err.response?.data?.detail || "Failed to login")
+      } else {
+        setError("An unexpected error occurred")
+      }
     } finally {
       setIsLoading(false)
     }

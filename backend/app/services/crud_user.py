@@ -1,8 +1,8 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.future import select
-from typing import Optional, Any, Dict, Union
+from typing import Optional
 from app.models.user import User
-from app.schemas.user_token import UserCreate, UserUpdate
+from app.schemas.user_token import UserCreate
 from app.core.security import get_password_hash, verify_password
 
 class CRUDUser:
