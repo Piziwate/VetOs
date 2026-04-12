@@ -1,0 +1,6 @@
+pymssql
+sqlalchemy[asyncio]
+asyncpg
+pydantic
+pydantic-settings
+python-dotenv

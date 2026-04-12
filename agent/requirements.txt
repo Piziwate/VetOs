@@ -1,0 +1,10 @@
+httpx
+websockets
+asyncio
+pydantic
+python-dotenv
+# win32print  # Windows specific, handled conditionally in code
+# pycups      # Unix specific, handled conditionally in code
+pydicom
+pynetdicom
+pyserial
