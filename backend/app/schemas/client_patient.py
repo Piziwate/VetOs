@@ -6,7 +6,7 @@ from datetime import date
 class ClientBase(BaseModel):
     first_name: Optional[str] = None
     last_name: str
-    email: Optional[EmailStr] = None
+    email: Optional[str] = None
     phone: Optional[str] = None
     address: Optional[str] = None
     city: Optional[str] = None
@@ -28,6 +28,10 @@ class ClientInDBBase(ClientBase):
 
 class Client(ClientInDBBase):
     pass
+
+class ClientPagination(BaseModel):
+    items: List[Client]
+    total: int
 
 # --- Patient Schemas ---
 class PatientBase(BaseModel):

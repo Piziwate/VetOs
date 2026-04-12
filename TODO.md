@@ -1,39 +1,25 @@
-# VetOS Project Roadmap & TODO
+# VetOS - Project Progress & TODO
 
-## Phase 1: Foundation & Infrastructure (COMPLETED)
-- [x] Establish directory structure (`backend/`, `frontend/`, `agent/`, `migration/`).
-- [x] Configure `docker-compose.yml` (Postgres, Redis, Adminer).
-- [x] Setup Backend skeleton (FastAPI, Alembic, Dockerfile).
-- [x] Setup Frontend skeleton (Vite, React, TS, Shadcn, i18next).
-- [x] Setup Agent skeleton (Python daemon).
-- [x] Initialize GitHub Actions CI/CD pipelines.
+## 📅 Last Update: 2026-04-12
 
-## Phase 2: Core Domain & Data Migration Engine (ACTIVE)
-- [ ] Design PostgreSQL schema (Users, Clients, Patients).
-- [ ] Establish RO MSSQL connection for migration.
-- [ ] Implement core migration ETL mapping (Clients/Patients).
-- [ ] Validate 100% data import (continuous mapping).
+### ✅ Completed
+- [x] **Frontend Reset**: Total wipe and rebuild with Vite + React + TS + Tailwind 4.
+- [x] **Layout**: Integrated official Shadcn `sidebar-16` block.
+- [x] **Migration Engine**: ETL script (`migration/migration_engine.py`) using `pymssql`.
+- [x] **Data Import**: Successfully migrated 5,339 clients and 6,156 patients from Diana (MSSQL).
+- [x] **Infrastructure**: Configured Nginx Reverse Proxy in Frontend Dockerfile to handle `/api/v1` and CORS.
+- [x] **Clients Page**: Full implementation with TanStack Table, server-side pagination, sorting, and global search.
+- [x] **UX**: Added Theme (Dark/Light/System) and Language (FR/EN) sub-menus in User Navigation.
 
-## Phase 3: Core API & Multilingual UI Scaffold
-- [ ] Build Client/Patient CRUD API endpoints.
-- [ ] Implement Auth (OAuth2/JWT) & RBAC.
-- [ ] Develop Client/Patient listing/details in React.
-- [ ] Integrate i18next (English, French, German).
+### 🚀 Next Steps
+- [ ] **Client Detail View**: Create a page to view/edit a single client and see their linked patients.
+- [ ] **Patients Page**: Implement a searchable list of all patients.
+- [ ] **Medical Records**: Map and migrate consultation data (`DiaKGBehs`) from Diana DB.
+- [ ] **Auth Refactoring**: Implement real JWT authentication flow in Backend and Frontend.
+- [ ] **Dashboard Charts**: Replace placeholders with real interactive charts (Recharts) using migrated data.
 
-## Phase 4: Medical Records & Consultations
-- [ ] Consultation domain model & API.
-- [ ] Rich text clinical notes.
-- [ ] Historical medical records migration.
-- [ ] Consultation dashboard UI.
-
-## Phase 5: Local Hardware Integration (The Agent)
-- [ ] Agent-Backend WebSocket handshake & pairing.
-- [ ] Direct printing module (OS Spooler).
-- [ ] Background lab result reception.
-
-## Phase 6: Specialized Modules (Billing, Lab, Imaging)
-- [ ] Billing & Swiss specifics (TARMED).
-- [ ] Lab analyzer serial/TCP parsing.
-- [ ] DICOM imaging integration.
-- [ ] Audit Log visualization UI.
-- [ ] In-App Help documentation system.
+### 🛠 Tech Stack Details
+- **Frontend**: Port 3000 (Nginx Proxy)
+- **Backend**: Port 8000 (FastAPI)
+- **Database**: PostgreSQL (Postgis ready)
+- **Migration**: Python ETL connecting to `nvsrv01.nacvet.local\SQLEXPRESS` (Diana DB)
