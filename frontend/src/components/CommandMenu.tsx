@@ -30,16 +30,15 @@ export function CommandMenu() {
         setOpen((open) => !open)
       }
       
-      // Global navigation shortcuts
       if (!open) {
         if (e.key === "g") {
           const handleGo = (ev: KeyboardEvent) => {
-            if (ev.key === "d") navigate("/");
-            if (ev.key === "c") navigate("/clients");
-            if (ev.key === "p") navigate("/patients");
-            window.removeEventListener("keydown", handleGo);
-          };
-          window.addEventListener("keydown", handleGo, { once: true });
+            if (ev.key === "d") navigate("/")
+            if (ev.key === "c") navigate("/clients")
+            if (ev.key === "p") navigate("/patients")
+            window.removeEventListener("keydown", handleGo)
+          }
+          window.addEventListener("keydown", handleGo, { once: true })
         }
       }
     }
@@ -50,12 +49,15 @@ export function CommandMenu() {
 
   return (
     <>
-      <p className="text-sm text-muted-foreground hidden lg:block">
-        Press{" "}
-        <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
-          <span className="text-xs">⌘</span>K
-        </kbd>
-      </p>
+      <div className="flex items-center gap-2 px-3 py-1.5 rounded-md border bg-muted/50 cursor-pointer hover:bg-muted transition-colors" onClick={() => setOpen(true)}>
+        <p className="text-sm text-muted-foreground hidden lg:block">
+          Press{" "}
+          <kbd className="pointer-events-none inline-flex h-5 select-none items-center gap-1 rounded border bg-background px-1.5 font-mono text-[10px] font-medium text-muted-foreground opacity-100">
+            <span className="text-xs">⌘</span>K
+          </kbd>
+          {" "}to search...
+        </p>
+      </div>
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput placeholder="Type a command or search..." />
         <CommandList>
@@ -79,12 +81,13 @@ export function CommandMenu() {
           </CommandGroup>
           <CommandSeparator />
           <CommandGroup heading="Actions">
-            <CommandItem onSelect={() => { /* Toggle Add Client Dialog somehow */ setOpen(false); }}>
+            <CommandItem onSelect={() => { setOpen(false); }}>
               <Plus className="mr-2 h-4 w-4" />
               <span>New Client</span>
               <CommandShortcut>N C</CommandShortcut>
             </CommandItem>
           </CommandGroup>
+          <CommandSeparator />
           <CommandGroup heading="Settings">
             <CommandItem onSelect={() => { navigate("/settings"); setOpen(false); }}>
               <Settings className="mr-2 h-4 w-4" />
