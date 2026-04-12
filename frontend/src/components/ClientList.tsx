@@ -48,9 +48,14 @@ export default function ClientList() {
   if (loading) return <div>{t('client_form.saving')}</div>
 
   return (
-    <Card className="w-full max-w-5xl mx-auto mt-8">
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle>{t('dashboard.clients_title')}</CardTitle>
+    <Card className="w-full shadow-sm border-none bg-card">
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-7">
+        <div className="space-y-1">
+          <CardTitle className="text-2xl font-bold">{t('dashboard.clients_title')}</CardTitle>
+          <p className="text-sm text-muted-foreground">
+            {t('dashboard.clients_caption')}
+          </p>
+        </div>
         <AddClientDialog onClientAdded={fetchClients} />
       </CardHeader>
       <CardContent>
