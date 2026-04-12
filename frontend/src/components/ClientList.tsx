@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react"
 import axios from "axios"
+import { useTranslation } from "react-i18next"
 import {
   Table,
   TableBody,
@@ -10,6 +11,7 @@ import {
   TableRow,
 } from "@/components/ui/table"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import AddClientDialog from "./AddClientDialog"
 
 interface Client {
   id: number
@@ -21,39 +23,45 @@ interface Client {
 }
 
 export default function ClientList() {
+  const { t } = useTranslation()
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
 
-  useEffect(() => {
-    const fetchClients = async () => {
-      try {
-        const response = await axios.get("http://localhost:8000/api/v1/clients/")
-        setClients(response.data)
-      } catch (error) {
-        console.error("Error fetching clients:", error)
-      } finally {
-        setLoading(false)
-      }
+  const fetchClients = async () => {
+    try {
+      const token = localStorage.getItem("token")
+      const response = await axios.get("http://localhost:8000/api/v1/clients/", {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setClients(response.data)
+    } catch (error) {
+      console.error("Error fetching clients:", error)
+    } finally {
+      setLoading(false)
     }
+  }
+
+  useEffect(() => {
     fetchClients()
   }, [])
 
-  if (loading) return <div>Loading clients...</div>
+  if (loading) return <div>{t('client_form.saving')}</div>
 
   return (
-    <Card className="w-full max-w-4xl mx-auto mt-8">
-      <CardHeader>
-        <CardTitle>VetOS Clients</CardTitle>
+    <Card className="w-full max-w-5xl mx-auto mt-8">
+      <CardHeader className="flex flex-row items-center justify-between">
+        <CardTitle>{t('dashboard.clients_title')}</CardTitle>
+        <AddClientDialog onClientAdded={fetchClients} />
       </CardHeader>
       <CardContent>
         <Table>
-          <TableCaption>A list of registered veterinary clients.</TableCaption>
+          <TableCaption>{t('dashboard.clients_caption')}</TableCaption>
           <TableHeader>
             <TableRow>
-              <TableHead>Name</TableHead>
-              <TableHead>Email</TableHead>
-              <TableHead>Phone</TableHead>
-              <TableHead>City</TableHead>
+              <TableHead>{t('client_form.last_name')}</TableHead>
+              <TableHead>{t('client_form.email')}</TableHead>
+              <TableHead>{t('client_form.phone')}</TableHead>
+              <TableHead>{t('client_form.city')}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -69,8 +77,8 @@ export default function ClientList() {
             ))}
             {clients.length === 0 && (
               <TableRow>
-                <TableCell colSpan={4} className="text-center py-4 text-muted-foreground">
-                  No clients found.
+                <TableCell colSpan={4} className="text-center py-8 text-muted-foreground">
+                  {t('dashboard.no_clients')}
                 </TableCell>
               </TableRow>
             )}

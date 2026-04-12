@@ -1,7 +1,10 @@
 import React from "react"
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom"
+import { useTranslation } from "react-i18next"
+import "./i18n"  // Import i18n configuration
 import Login from "./pages/Login"
 import ClientList from "./components/ClientList"
+import LanguageSwitcher from "./components/LanguageSwitcher"
 
 // Simple component to protect routes
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
@@ -13,16 +16,19 @@ const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
 }
 
 function App() {
+  const { t } = useTranslation()
+
   return (
     <Router>
       <main className="container mx-auto py-10 px-4 min-h-screen">
-        <header className="text-center mb-10">
+        <header className="text-center mb-6">
           <h1 className="text-4xl font-extrabold tracking-tight lg:text-5xl">
-            VetOS
+            {t('app_name')}
           </h1>
           <p className="text-xl text-muted-foreground mt-2">
-            Modern Veterinary Practice Management
+            {t('tagline')}
           </p>
+          <LanguageSwitcher />
         </header>
 
         <Routes>
