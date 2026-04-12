@@ -8,9 +8,14 @@ from sqlalchemy.ext.asyncio import async_engine_from_config
 from alembic import context
 from app.db.base import Base
 
+import os
 # this is the Alembic Config object, which provides
 # access to the values within the .ini file in use.
 config = context.config
+
+# Overwrite sqlalchemy.url with environment variable if present
+section = config.config_ini_section
+config.set_section_option(section, "sqlalchemy.url", os.environ.get("VETOS_POSTGRES_URL", config.get_section_option(section, "sqlalchemy.url")))
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

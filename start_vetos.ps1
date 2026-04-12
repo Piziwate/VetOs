@@ -13,7 +13,7 @@ docker exec vetos-backend alembic upgrade head
 
 # Run Seeding inside the backend container
 Write-Host "Ensuring Admin User exists..." -ForegroundColor Yellow
-docker exec vetos-backend python app/db/init_db.py
+docker exec vetos-backend env PYTHONPATH=/app python app/db/init_db.py
 
 Write-Host "`nVetOS is READY!" -ForegroundColor Green
 Write-Host "Frontend: http://localhost:3000" -ForegroundColor Cyan
