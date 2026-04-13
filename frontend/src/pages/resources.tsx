@@ -121,20 +121,23 @@ export const Resources = () => {
   const fetchClinics = useCallback(async () => {
     try {
       const response = await api.get("/resources/clinics")
-      setClinics(response.data)
-      if (response.data.length > 0) {
-        if (!activeClinic) setActiveClinic(response.data[0])
-        else {
-          const updated = response.data.find((c: Clinic) => c.id === activeClinic.id)
-          if (updated) setActiveClinic(updated)
-        }
+      const data = response.data as Clinic[]
+      setClinics(data)
+      
+      // Update active clinic only if needed, without triggering infinite loop
+      if (data.length > 0) {
+        setActiveClinic(current => {
+          if (!current) return data[0]
+          const updated = data.find(c => c.id === current.id)
+          return updated || data[0]
+        })
       }
     } catch (error) {
       console.error("Failed to fetch clinics", error)
     } finally {
       setLoading(false)
     }
-  }, [activeClinic])
+  }, []) // Removed activeClinic from dependencies
 
   const fetchUsers = useCallback(async () => {
     try {
