@@ -11,6 +11,7 @@ class ClientBase(BaseModel):
     address: Optional[str] = None
     city: Optional[str] = None
     zip_code: Optional[str] = None
+    favorite_clinic_id: Optional[int] = None
 
 class ClientCreate(ClientBase):
     pass

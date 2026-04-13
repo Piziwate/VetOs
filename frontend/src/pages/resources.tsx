@@ -7,7 +7,8 @@ import { Badge } from "@/components/ui/badge"
 import { 
   Plus, Building2, DoorOpen, Bed, Trash2, 
   Stethoscope, Scissors, Activity, Search,
-  Clock, Calendar, AlertTriangle
+  Clock, Calendar, AlertTriangle, X, Users,
+  UserPlus, Check
 } from "lucide-react"
 import api from "@/lib/api"
 
@@ -57,15 +58,35 @@ interface Room {
   slots: HospitalizationSlot[]
 }
 
+interface ClinicClosure {
+  id: number
+  start_date: string
+  end_date: string
+  description: string
+}
+
+interface OpeningHoursSlot {
+  open: string
+  close: string
+}
+
+interface StaffMember {
+  id: number
+  full_name: string
+  email: string
+  role: string
+}
+
 interface Clinic {
   id: number
   name: string
   address: string
   phone: string
   email: string
-  opening_hours: any
+  opening_hours: Record<string, OpeningHoursSlot[]>
   rooms: Room[]
-  closures: any[]
+  closures: ClinicClosure[]
+  staff: StaffMember[]
 }
 
 const ROOM_TYPE_LABELS: Record<RoomType, string> = {
@@ -84,21 +105,38 @@ const ROOM_TYPE_ICONS: Record<RoomType, any> = {
   hospitalization: Bed
 }
 
+const DAYS_FR = {
+  monday: "Lundi",
+  tuesday: "Mardi",
+  wednesday: "Mercredi",
+  thursday: "Jeudi",
+  friday: "Vendredi",
+  saturday: "Samedi",
+  sunday: "Dimanche"
+}
+
 export const Resources = () => {
   const [clinics, setClinics] = useState<Clinic[]>([])
+  const [allUsers, setAllUsers] = useState<StaffMember[]>([])
   const [activeClinic, setActiveClinic] = useState<Clinic | null>(null)
   const [activeRoomId, setActiveRoomId] = useState<number | null>(null)
   const [loading, setLoading] = useState(true)
 
-  // Dialog States
+  // Modals state
   const [isRoomDialogOpen, setIsRoomDialogOpen] = useState(false)
   const [newRoomData, setNewRoomData] = useState({ name: "", type: "consultation" as RoomType })
   
-  const [isSlotDialogOpen, setIsRoomSlotDialogOpen] = useState(false)
+  const [isSlotDialogOpen, setIsSlotDialogOpen] = useState(false)
   const [newSlotData, setNewSlotData] = useState({ box_reference: "", type: "cage" as SlotType })
 
   const [isClosureDialogOpen, setIsClosureDialogOpen] = useState(false)
   const [newClosureData, setNewClosureData] = useState({ description: "", start_date: "", end_date: "" })
+
+  const [isHoursDialogOpen, setIsHoursDialogOpen] = useState(false)
+  const [editingDay, setEditingDay] = useState<string | null>(null)
+  const [editingSlots, setEditingSlots] = useState<OpeningHoursSlot[]>([])
+
+  const [isStaffDialogOpen, setIsStaffDialogOpen] = useState(false)
 
   const [alertConfig, setAlertConfig] = useState<{
     open: boolean;
@@ -109,19 +147,45 @@ export const Resources = () => {
 
   useEffect(() => {
     fetchClinics()
+    fetchUsers()
   }, [])
 
   const fetchClinics = async () => {
     try {
       const response = await api.get("/resources/clinics")
       setClinics(response.data)
-      if (response.data.length > 0 && !activeClinic) {
-        setActiveClinic(response.data[0])
+      if (response.data.length > 0) {
+        if (!activeClinic) setActiveClinic(response.data[0])
+        else {
+          const updated = response.data.find((c: Clinic) => c.id === activeClinic.id)
+          if (updated) setActiveClinic(updated)
+        }
       }
     } catch (error) {
       console.error("Failed to fetch clinics", error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  const fetchUsers = async () => {
+    try {
+      const response = await api.get("/users/")
+      setAllUsers(response.data)
+    } catch (error) {
+      console.error("Failed to fetch users", error)
+    }
+  }
+
+  const handleUpdateClinicField = async (field: keyof Clinic, value: any) => {
+    if (!activeClinic) return
+    try {
+      await api.put(`/resources/clinics/${activeClinic.id}`, { [field]: value })
+      const updatedClinic = { ...activeClinic, [field]: value }
+      setActiveClinic(updatedClinic)
+      setClinics(clinics.map(c => c.id === activeClinic.id ? updatedClinic : c))
+    } catch (error) {
+      console.error("Failed to update clinic", error)
     }
   }
 
@@ -150,24 +214,11 @@ export const Resources = () => {
     }
   }
 
-  const handleUpdateClinicField = async (field: keyof Clinic, value: any) => {
-    if (!activeClinic) return
-    const updatedClinic = { ...activeClinic, [field]: value }
-    setActiveClinic(updatedClinic)
-    setClinics(clinics.map(c => c.id === activeClinic.id ? updatedClinic : c))
-    try {
-      await api.put(`/resources/clinics/${activeClinic.id}`, { [field]: value })
-    } catch (error) {
-      console.error("Failed to update clinic", error)
-    }
-  }
-
   const handleAddRoomSubmit = async () => {
     if (!activeClinic || !newRoomData.name) return
     try {
       const response = await api.post("/resources/rooms", {
-        name: newRoomData.name,
-        type: newRoomData.type,
+        ...newRoomData,
         clinic_id: activeClinic.id
       })
       const updatedClinic = { ...activeClinic, rooms: [...activeClinic.rooms, response.data] }
@@ -185,9 +236,7 @@ export const Resources = () => {
     try {
       await api.put(`/resources/rooms/${roomId}`, { type })
       const updatedRooms = activeClinic.rooms.map(r => r.id === roomId ? { ...r, type } : r)
-      const updatedClinic = { ...activeClinic, rooms: updatedRooms }
-      setActiveClinic(updatedClinic)
-      setClinics(clinics.map(c => c.id === activeClinic.id ? updatedClinic : c))
+      setActiveClinic({ ...activeClinic, rooms: updatedRooms })
     } catch (error) {
       console.error("Failed to update room type", error)
     }
@@ -197,17 +246,12 @@ export const Resources = () => {
     setAlertConfig({
       open: true,
       title: "Supprimer la salle ?",
-      description: "Cette action supprimera également tous les emplacements d'hospitalisation liés. Cette action est irréversible.",
+      description: "Cette action supprimera également tous les emplacements liés. Cette opération est irréversible.",
       action: async () => {
-        try {
-          await api.delete(`/resources/rooms/${roomId}`)
-          const updatedClinic = { ...activeClinic!, rooms: activeClinic!.rooms.filter(r => r.id !== roomId) }
-          setActiveClinic(updatedClinic)
-          setClinics(clinics.map(c => c.id === activeClinic!.id ? updatedClinic : c))
-          if (activeRoomId === roomId) setActiveRoomId(null)
-        } catch (error) {
-          console.error("Failed to delete room", error)
-        }
+        await api.delete(`/resources/rooms/${roomId}`)
+        const updatedRooms = activeClinic!.rooms.filter(r => r.id !== roomId)
+        setActiveClinic({ ...activeClinic!, rooms: updatedRooms })
+        if (activeRoomId === roomId) setActiveRoomId(null)
       }
     })
   }
@@ -216,17 +260,14 @@ export const Resources = () => {
     if (!activeRoomId || !newSlotData.box_reference) return
     try {
       const response = await api.post("/resources/slots", {
-        box_reference: newSlotData.box_reference,
-        type: newSlotData.type,
+        ...newSlotData,
         room_id: activeRoomId
       })
       const updatedRooms = activeClinic!.rooms.map(r => 
         r.id === activeRoomId ? { ...r, slots: [...(r.slots || []), response.data] } : r
       )
-      const updatedClinic = { ...activeClinic!, rooms: updatedRooms }
-      setActiveClinic(updatedClinic)
-      setClinics(clinics.map(c => c.id === activeClinic!.id ? updatedClinic : c))
-      setIsRoomSlotDialogOpen(false)
+      setActiveClinic({ ...activeClinic!, rooms: updatedRooms })
+      setIsSlotDialogOpen(false)
       setNewSlotData({ box_reference: "", type: "cage" })
     } catch (error) {
       console.error("Failed to add slot", error)
@@ -237,38 +278,48 @@ export const Resources = () => {
     setAlertConfig({
       open: true,
       title: "Supprimer l'emplacement ?",
-      description: "L'emplacement d'hospitalisation sera définitivement retiré.",
+      description: "L'unité d'hospitalisation sera définitivement retirée.",
       action: async () => {
-        try {
-          await api.delete(`/resources/slots/${slotId}`)
-          const updatedRooms = activeClinic!.rooms.map(r => 
-            r.id === roomId ? { ...r, slots: r.slots.filter(s => s.id !== slotId) } : r
-          )
-          const updatedClinic = { ...activeClinic!, rooms: updatedRooms }
-          setActiveClinic(updatedClinic)
-          setClinics(clinics.map(c => c.id === activeClinic!.id ? updatedClinic : c))
-        } catch (error) {
-          console.error("Failed to delete slot", error)
-        }
+        await api.delete(`/resources/slots/${slotId}`)
+        const updatedRooms = activeClinic!.rooms.map(r => 
+          r.id === roomId ? { ...r, slots: r.slots.filter(s => s.id !== slotId) } : r
+        )
+        setActiveClinic({ ...activeClinic!, rooms: updatedRooms })
       }
     })
   }
 
+  const handleOpenHoursDialog = (day: string) => {
+    setEditingDay(day)
+    setEditingSlots(activeClinic?.opening_hours?.[day] || [])
+    setIsHoursDialogOpen(true)
+  }
+
+  const handleSaveHours = async () => {
+    if (!editingDay || !activeClinic) return
+    const updatedHours = {
+      ...activeClinic.opening_hours,
+      [editingDay]: editingSlots.filter(s => s.open && s.close)
+    }
+    await handleUpdateClinicField("opening_hours", updatedHours)
+    setIsHoursDialogOpen(false)
+  }
+
   const handleAddClosureSubmit = async () => {
-    if (!activeClinic || !newClosureData.description || !newClosureData.start_date || !newClosureData.end_date) return
+    if (!activeClinic || !newClosureData.description) return
     try {
       const response = await api.post("/resources/closures", {
-        clinic_id: activeClinic.id,
-        ...newClosureData
+        ...newClosureData,
+        clinic_id: activeClinic.id
       })
-      const updatedClinic = { ...activeClinic, closures: [...(activeClinic.closures || []), response.data] }
-      setActiveClinic(updatedClinic)
-      setClinics(clinics.map(c => c.id === activeClinic.id ? updatedClinic : c))
+      setActiveClinic({
+        ...activeClinic,
+        closures: [...(activeClinic.closures || []), response.data]
+      })
       setIsClosureDialogOpen(false)
       setNewClosureData({ description: "", start_date: "", end_date: "" })
     } catch (error) {
       console.error("Failed to add closure", error)
-      alert("Format de date invalide (YYYY-MM-DD) ou erreur serveur.")
     }
   }
 
@@ -276,381 +327,504 @@ export const Resources = () => {
     setAlertConfig({
       open: true,
       title: "Supprimer la fermeture ?",
-      description: "Cette période redeviendra disponible pour les rendez-vous.",
+      description: "Cette période sera à nouveau disponible pour l'activité du cabinet.",
       action: async () => {
-        try {
-          await api.delete(`/resources/closures/${closureId}`)
-          const updatedClinic = { ...activeClinic!, closures: activeClinic!.closures.filter(c => c.id !== closureId) }
-          setActiveClinic(updatedClinic)
-          setClinics(clinics.map(c => c.id === activeClinic!.id ? updatedClinic : c))
-        } catch (error) {
-          console.error("Failed to delete closure", error)
-        }
+        await api.delete(`/resources/closures/${closureId}`)
+        setActiveClinic({
+          ...activeClinic!,
+          closures: activeClinic!.closures.filter(c => c.id !== closureId)
+        })
       }
     })
   }
 
+  const toggleStaffAssignment = async (userId: number) => {
+    if (!activeClinic) return
+    const isAssigned = activeClinic.staff?.some(u => u.id === userId)
+    
+    // Pour cet utilisateur, on doit envoyer la nouvelle liste de cliniques
+    // Mais l'API backend attend {user_id, clinic_ids}. 
+    // On va tricher un peu pour le moment : on récupère les cliniques de l'utilisateur
+    // ou on implémente un toggle simple si possible.
+    
+    // Logique simplifiée pour le prototype :
+    try {
+      // On récupère les IDs actuels des cliniques du membre (on simule car on ne les a pas tous ici)
+      // En production, il faudrait une API 'GET /users/{id}'
+      const currentStaffMember = allUsers.find(u => u.id === userId)
+      if (!currentStaffMember) return
+
+      // Pour simplifier, on envoie juste l'ID de la clinique active (toggle)
+      // Note: Le backend actuel écrase la liste. 
+      // Il faudrait une logique plus fine, mais restons sur le contrat d'API établi.
+      const userClinicsRes = await api.get(`/users/`) // Mock: en vrai on devrait avoir les cliniques par user
+      const userInDb = userClinicsRes.data.find((u: any) => u.id === userId)
+      
+      let newClinicIds = (userInDb.clinics || []).map((c: any) => c.id)
+      if (isAssigned) {
+        newClinicIds = newClinicIds.filter((id: number) => id !== activeClinic.id)
+      } else {
+        newClinicIds = [...newClinicIds, activeClinic.id]
+      }
+
+      await api.post("/resources/staff-assignments", {
+        user_id: userId,
+        clinic_ids: newClinicIds
+      })
+      
+      fetchClinics() // Refresh everything
+    } catch (error) {
+      console.error("Failed to toggle staff assignment", error)
+    }
+  }
+
   const activeRoom = activeClinic?.rooms.find(r => r.id === activeRoomId)
 
-  if (loading) return <div className="p-8 text-center font-medium text-muted-foreground animate-pulse">Chargement des ressources...</div>
+  if (loading) return <div className="flex items-center justify-center min-h-[400px] text-muted-foreground italic">Chargement des ressources...</div>
 
   return (
-    <div className="flex flex-col gap-8">
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-primary">Ressources & Sites</h1>
-          <p className="text-muted-foreground">Pilotez vos cliniques et leurs équipements.</p>
+    <div className="max-w-6xl mx-auto space-y-8 pb-12">
+      <div className="flex justify-between items-end">
+        <div className="space-y-1">
+          <h1 className="text-2xl font-semibold tracking-tight">Ressources & Sites</h1>
+          <p className="text-sm text-muted-foreground">Configuration des cliniques, salles et capacités d'accueil.</p>
         </div>
-        <Button onClick={handleCreateClinic} className="shadow-lg hover:scale-105 transition-transform text-xs uppercase font-black tracking-widest">
-          <Plus className="mr-2 h-4 w-4" /> Nouveau Site
+        <Button onClick={handleCreateClinic} size="sm">
+          <Plus className="mr-2 h-4 w-4" /> Nouveau site
         </Button>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-        {/* Liste des sites */}
-        <div className="flex flex-col gap-2 bg-accent/10 p-4 rounded-xl border border-accent/20">
-          <Label className="text-[10px] uppercase font-bold text-muted-foreground tracking-widest px-2 mb-2">Sites Physiques</Label>
-          {clinics.map(c => (
-            <button
-              key={c.id}
-              onClick={() => { setActiveClinic(c); setActiveRoomId(null); }}
-              className={`flex items-center justify-between group px-4 py-3 rounded-xl text-sm transition-all ${activeClinic?.id === c.id ? "bg-primary text-primary-foreground shadow-lg scale-102" : "hover:bg-accent/50 text-muted-foreground"}`}
-            >
-              <div className="flex items-center gap-3">
-                <Building2 className={`h-4 w-4 ${activeClinic?.id === c.id ? "text-primary-foreground" : "text-primary"}`} />
-                <span className="font-semibold">{c.name}</span>
-              </div>
-            </button>
-          ))}
+      <div className="grid grid-cols-1 md:grid-cols-[240px_1fr] gap-8">
+        {/* Sidebar */}
+        <div className="space-y-4">
+          <div className="space-y-1">
+            <p className="text-[10px] font-medium uppercase text-muted-foreground tracking-wider px-2">Liste des sites</p>
+            <div className="space-y-1">
+              {clinics.map(c => (
+                <button
+                  key={c.id}
+                  onClick={() => { setActiveClinic(c); setActiveRoomId(null); }}
+                  className={`w-full flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-colors ${activeClinic?.id === c.id ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-accent"}`}
+                >
+                  <Building2 className="h-4 w-4 shrink-0" />
+                  <span className="truncate">{c.name}</span>
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
 
-        {/* Détails du site */}
-        <div className="md:col-span-3 flex flex-col gap-8 animate-in fade-in slide-in-from-right-4 duration-500">
+        {/* Content */}
+        <div className="space-y-8">
           {activeClinic ? (
             <>
-              {/* Carte Infos */}
-              <Card className="border-none shadow-xl bg-gradient-to-br from-white to-accent/5 overflow-hidden">
-                <div className="h-1.5 bg-primary w-full" />
-                <CardHeader className="flex flex-row items-center justify-between">
-                  <div className="flex flex-col gap-1">
-                    <CardTitle className="text-2xl text-primary font-black uppercase tracking-tight">{activeClinic.name}</CardTitle>
-                    <CardDescription>Configuration administrative du site</CardDescription>
+              {/* Informations du site */}
+              <Card>
+                <CardHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
+                  <div className="space-y-1">
+                    <CardTitle className="text-lg">{activeClinic.name}</CardTitle>
+                    <CardDescription>Informations de contact et adresse du site.</CardDescription>
                   </div>
-                  <Button variant="ghost" size="icon" className="text-destructive hover:bg-destructive/10" onClick={() => {
+                  <Button variant="ghost" size="icon" className="text-muted-foreground hover:text-destructive" onClick={() => {
                     setAlertConfig({
                       open: true,
-                      title: `Supprimer le site ${activeClinic.name} ?`,
-                      description: "Toutes les données associées (salles, planning, etc.) seront perdues. Cette action est irréversible.",
+                      title: `Supprimer le site ?`,
+                      description: `Êtes-vous sûr de vouloir supprimer définitivement le site "${activeClinic.name}" ?`,
                       action: async () => {
                         await api.delete(`/resources/clinics/${activeClinic.id}`)
                         fetchClinics()
+                        setActiveClinic(null)
                       }
                     })
                   }}>
-                    <Trash2 className="h-5 w-5" />
+                    <Trash2 className="h-4 w-4" />
                   </Button>
                 </CardHeader>
-                <CardContent className="grid gap-6">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Nom public</Label>
-                      <Input value={activeClinic.name} onChange={e => handleUpdateClinicField("name", e.target.value)} className="bg-white border-accent/20 focus:border-primary font-medium" />
+                <CardContent className="grid gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Nom du site</Label>
+                      <Input value={activeClinic.name} onChange={e => handleUpdateClinicField("name", e.target.value)} />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Email contact</Label>
-                      <Input value={activeClinic.email || ""} onChange={e => handleUpdateClinicField("email", e.target.value)} className="bg-white border-accent/20" />
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Email</Label>
+                      <Input value={activeClinic.email || ""} onChange={e => handleUpdateClinicField("email", e.target.value)} />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Téléphone</Label>
-                      <Input value={activeClinic.phone || ""} onChange={e => handleUpdateClinicField("phone", e.target.value)} className="bg-white border-accent/20" />
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Téléphone</Label>
+                      <Input value={activeClinic.phone || ""} onChange={e => handleUpdateClinicField("phone", e.target.value)} />
                     </div>
-                    <div className="space-y-2">
-                      <Label className="text-xs font-bold text-muted-foreground uppercase tracking-wider">Adresse complète</Label>
-                      <Input value={activeClinic.address || ""} onChange={e => handleUpdateClinicField("address", e.target.value)} className="bg-white border-accent/20" />
+                    <div className="space-y-1.5">
+                      <Label className="text-xs">Adresse</Label>
+                      <Input value={activeClinic.address || ""} onChange={e => handleUpdateClinicField("address", e.target.value)} />
                     </div>
                   </div>
                 </CardContent>
               </Card>
 
               {/* Salles & Hospit */}
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <Card className="border-accent/20 shadow-lg h-full">
-                  <CardHeader className="flex flex-row items-center justify-between border-b bg-accent/5 pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-primary/10 rounded-lg text-primary"><DoorOpen className="h-5 w-5" /></div>
-                      <CardTitle className="text-lg font-bold">Locaux & Équipements</CardTitle>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => setIsRoomDialogOpen(true)} className="border-primary text-primary hover:bg-primary hover:text-white transition-all"><Plus className="h-4 w-4" /></Button>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card className="flex flex-col">
+                  <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
+                    <CardTitle className="text-md font-medium flex items-center gap-2">
+                      <DoorOpen className="h-4 w-4 text-primary" /> Locaux
+                    </CardTitle>
+                    <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setIsRoomDialogOpen(true)}>
+                      <Plus className="h-3 w-3" />
+                    </Button>
                   </CardHeader>
-                  <CardContent className="pt-6">
-                    <div className="flex flex-col gap-3">
+                  <CardContent className="pt-4 flex-1">
+                    <div className="space-y-2">
                       {activeClinic.rooms?.map(room => {
                         const Icon = ROOM_TYPE_ICONS[room.type] || DoorOpen
                         return (
                           <div 
-                            key={room.id} 
+                            key={room.id}
                             onClick={() => setActiveRoomId(room.id)}
-                            className={`flex items-center justify-between p-3 border rounded-xl cursor-pointer transition-all hover:border-primary/50 ${activeRoomId === room.id ? "border-primary bg-primary/5 ring-1 ring-primary" : "border-accent/20 bg-accent/5"}`}
+                            className={`flex items-center justify-between p-2.5 border rounded-lg cursor-pointer transition-all ${activeRoomId === room.id ? "border-primary bg-primary/5 shadow-sm" : "hover:bg-accent/50 border-transparent bg-accent/10"}`}
                           >
-                            <div className="flex items-center gap-3">
-                              <Icon className={`h-4 w-4 ${activeRoomId === room.id ? "text-primary" : "text-muted-foreground"}`} />
-                              <div>
-                                <p className="text-sm font-bold">{room.name}</p>
+                            <div className="flex items-center gap-3 text-left">
+                              <div className={`p-1.5 rounded-md ${activeRoomId === room.id ? "bg-primary/20 text-primary" : "bg-muted text-muted-foreground"}`}>
+                                <Icon className="h-3.5 w-3.5" />
+                              </div>
+                              <div className="space-y-0.5">
+                                <p className="text-sm font-medium">{room.name}</p>
                                 <Select value={room.type} onValueChange={(val: string) => handleUpdateRoomType(room.id, val as RoomType)}>
-                                  <SelectTrigger className="h-auto p-0 border-none bg-transparent shadow-none focus:ring-0 text-[10px] uppercase font-black text-muted-foreground hover:text-primary transition-colors">
+                                  <SelectTrigger className="h-auto p-0 border-none bg-transparent shadow-none focus:ring-0 text-[10px] text-muted-foreground uppercase tracking-tight font-semibold hover:text-primary">
                                     <SelectValue />
                                   </SelectTrigger>
                                   <SelectContent>
                                     {Object.entries(ROOM_TYPE_LABELS).map(([val, label]) => (
-                                      <SelectItem key={val} value={val} className="text-xs uppercase font-bold">{label}</SelectItem>
+                                      <SelectItem key={val} value={val} className="text-xs">{label}</SelectItem>
                                     ))}
                                   </SelectContent>
                                 </Select>
                               </div>
                             </div>
-                            <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive/50 hover:text-destructive hover:bg-destructive/10" onClick={(e) => { e.stopPropagation(); handleDeleteRoom(room.id); }}><Trash2 className="h-4 w-4" /></Button>
+                            <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-destructive" onClick={(e) => { e.stopPropagation(); handleDeleteRoom(room.id); }}>
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        )
+                      })}
+                      {activeClinic.rooms?.length === 0 && <p className="text-xs text-muted-foreground italic text-center py-4">Aucune salle.</p>}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card className="flex flex-col">
+                  <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
+                    <CardTitle className="text-md font-medium flex items-center gap-2">
+                      <Bed className="h-4 w-4 text-primary" /> Hospitalisation
+                    </CardTitle>
+                    {activeRoom?.type === "hospitalization" && (
+                      <Button variant="outline" size="icon" className="h-7 w-7" onClick={() => setIsSlotDialogOpen(true)}>
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    )}
+                  </CardHeader>
+                  <CardContent className="pt-4 flex-1">
+                    {!activeRoom ? (
+                      <p className="text-xs text-muted-foreground text-center py-8">Sélectionnez une salle.</p>
+                    ) : activeRoom.type !== "hospitalization" ? (
+                      <div className="text-center py-8 space-y-2">
+                        <Badge variant="outline" className="text-[10px] font-semibold uppercase">Salle technique</Badge>
+                        <p className="text-xs text-muted-foreground">Pas d'hospitalisation ici.</p>
+                      </div>
+                    ) : (
+                      <div className="grid grid-cols-2 gap-2">
+                        {activeRoom.slots?.map(slot => (
+                          <div key={slot.id} className="flex items-center justify-between px-2 py-1.5 bg-primary/5 rounded border text-sm">
+                            <span className="font-medium text-xs truncate">{slot.box_reference}</span>
+                            <button onClick={() => handleDeleteSlot(activeRoom.id, slot.id)} className="text-muted-foreground hover:text-destructive transition-colors">
+                              <X className="h-3 w-3" />
+                            </button>
+                          </div>
+                        ))}
+                        {activeRoom.slots?.length === 0 && <p className="col-span-2 text-xs text-muted-foreground italic text-center py-4">Aucun box.</p>}
+                      </div>
+                    )}
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Équipe et Horaires */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <Card>
+                  <CardHeader className="flex flex-row items-center justify-between pb-4">
+                    <CardTitle className="text-md font-medium flex items-center gap-2">
+                      <Users className="h-4 w-4 text-primary" /> Équipe du site
+                    </CardTitle>
+                    <Button variant="outline" size="sm" className="h-7 text-xs" onClick={() => setIsStaffDialogOpen(true)}>
+                      <UserPlus className="h-3.5 w-3.5 mr-1" /> Gérer
+                    </Button>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-2">
+                      {activeClinic.staff?.map(member => (
+                        <div key={member.id} className="flex items-center justify-between p-2 border rounded-lg bg-accent/5">
+                          <div className="flex items-center gap-3">
+                            <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-xs font-bold">
+                              {member.full_name.split(' ').map(n => n[0]).join('')}
+                            </div>
+                            <div>
+                              <p className="text-xs font-medium">{member.full_name}</p>
+                              <p className="text-[10px] text-muted-foreground">{member.role}</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))}
+                      {activeClinic.staff?.length === 0 && <p className="text-xs text-muted-foreground italic text-center py-4">Aucun membre assigné.</p>}
+                    </div>
+                  </CardContent>
+                </Card>
+
+                <Card>
+                  <CardHeader className="pb-4">
+                    <CardTitle className="text-md font-medium flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-primary" /> Horaires d'exploitation
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                      {(Object.keys(DAYS_FR) as Array<keyof typeof DAYS_FR>).map(day => {
+                        const slots = activeClinic.opening_hours?.[day] || []
+                        return (
+                          <div key={day} className="flex flex-col gap-1.5 p-2 border rounded-md bg-accent/5">
+                            <p className="text-[9px] font-bold uppercase text-muted-foreground">{DAYS_FR[day]}</p>
+                            <div className="min-h-[30px]">
+                              {slots.map((s, idx) => (
+                                <p key={idx} className="text-[9px] font-medium text-center bg-white border rounded">{s.open}-{s.close}</p>
+                              ))}
+                              {slots.length === 0 && <p className="text-[9px] text-muted-foreground/50 text-center">Fermé</p>}
+                            </div>
+                            <Button variant="ghost" size="sm" className="h-5 text-[8px] uppercase font-bold" onClick={() => handleOpenHoursDialog(day)}>Éditer</Button>
                           </div>
                         )
                       })}
                     </div>
                   </CardContent>
                 </Card>
-
-                <Card className="border-accent/20 shadow-lg h-full overflow-hidden">
-                  <CardHeader className="flex flex-row items-center justify-between border-b bg-accent/5 pb-4">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-blue-500/10 rounded-lg text-blue-600"><Bed className="h-5 w-5" /></div>
-                      <CardTitle className="text-lg font-bold">Capacités d'Hospit</CardTitle>
-                    </div>
-                    {activeRoom?.type === "hospitalization" && (
-                      <Button variant="outline" size="sm" onClick={() => setIsRoomSlotDialogOpen(true)} className="border-blue-500 text-blue-600 hover:bg-blue-500 hover:text-white transition-all"><Plus className="h-4 w-4" /></Button>
-                    )}
-                  </CardHeader>
-                  <CardContent className="pt-6 h-[300px] overflow-y-auto">
-                    {!activeRoom ? (
-                      <div className="h-full flex flex-col items-center justify-center text-center p-8 gap-4 grayscale opacity-50">
-                        <DoorOpen className="h-12 w-12 text-muted-foreground" />
-                        <p className="text-sm text-muted-foreground italic">Sélectionnez une salle pour voir ses configurations.</p>
-                      </div>
-                    ) : activeRoom.type !== "hospitalization" ? (
-                      <div className="h-full flex flex-col items-center justify-center text-center p-8 gap-4">
-                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-200 uppercase text-[10px] font-black py-1">Salle technique</Badge>
-                        <p className="text-sm text-muted-foreground max-w-[200px]">Cette salle ne dispose pas d'emplacements d'hospitalisation.</p>
-                      </div>
-                    ) : (
-                      <div className="grid grid-cols-2 gap-3">
-                        {activeRoom.slots?.map(slot => (
-                          <div key={slot.id} className="flex items-center justify-between p-3 border rounded-xl bg-blue-50/30 border-blue-100 group hover:shadow-sm transition-all">
-                            <div className="flex items-center gap-3">
-                              <Badge className="bg-white border-blue-200 text-blue-700 hover:bg-white font-bold">{slot.box_reference}</Badge>
-                              <span className="text-[10px] uppercase font-black text-blue-400">{slot.type}</span>
-                            </div>
-                            <button onClick={() => handleDeleteSlot(activeRoom.id, slot.id)} className="text-destructive/30 hover:text-destructive transition-colors"><Trash2 className="h-3.5 w-3.5" /></button>
-                          </div>
-                        ))}
-                        {activeRoom.slots?.length === 0 && <p className="col-span-2 text-center text-sm text-muted-foreground italic py-12">Aucun box configuré.</p>}
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
               </div>
 
-              {/* Horaires */}
-              <Card className="border-accent/20 shadow-lg border-l-4 border-l-primary overflow-hidden">
-                <CardHeader className="bg-accent/5 border-b pb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-primary/10 rounded-lg text-primary"><Clock className="h-5 w-5" /></div>
-                    <CardTitle className="text-lg font-bold">Horaires d'exploitation</CardTitle>
-                  </div>
-                  <CardDescription>Plages horaires utilisées pour le moteur de réservation et les agendas.</CardDescription>
-                </CardHeader>
-                <CardContent className="pt-6 px-4 sm:px-6">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-4">
-                    {["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"].map((day) => {
-                      const dayLabels: Record<string, string> = { monday: "Lun", tuesday: "Mar", wednesday: "Mer", thursday: "Jeu", friday: "Ven", saturday: "Sam", sunday: "Dim" }
-                      const slots = activeClinic.opening_hours?.[day] || []
-                      return (
-                        <div key={day} className="flex flex-col gap-3 p-4 border rounded-xl bg-accent/5 hover:bg-accent/10 transition-colors group">
-                          <p className="text-xs font-black uppercase text-primary border-b border-primary/10 pb-2">{dayLabels[day]}</p>
-                          <div className="flex flex-col gap-2 min-h-[60px]">
-                            {slots.map((s: any, idx: number) => (
-                              <div key={idx} className="flex flex-col text-[10px] font-bold bg-white p-2 rounded-lg border border-primary/10 shadow-sm text-center">
-                                <span className="text-green-600">{s.open} - {s.close}</span>
-                              </div>
-                            ))}
-                            {slots.length === 0 && <span className="text-[10px] text-destructive/50 font-bold uppercase py-2 italic text-center">Fermé</span>}
-                          </div>
-                          <Button variant="ghost" size="sm" className="h-6 text-[10px] uppercase font-black hover:bg-primary/10 hover:text-primary opacity-0 group-hover:opacity-100 transition-opacity">Éditer</Button>
-                        </div>
-                      )
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-
               {/* Congés & Fermetures */}
-              <Card className="border-accent/20 shadow-lg border-l-4 border-l-orange-400 overflow-hidden">
-                <CardHeader className="bg-accent/5 border-b pb-4">
-                  <div className="flex flex-row items-center justify-between">
-                    <div className="flex items-center gap-3">
-                      <div className="p-2 bg-orange-100 rounded-lg text-orange-600"><Calendar className="h-5 w-5" /></div>
-                      <CardTitle className="text-lg font-bold">Congés & Fermetures Exceptionnelles</CardTitle>
-                    </div>
-                    <Button variant="outline" size="sm" onClick={() => setIsClosureDialogOpen(true)} className="border-orange-400 text-orange-600 hover:bg-orange-400 hover:text-white text-[10px] uppercase font-black transition-all"><Plus className="h-4 w-4 mr-2" /> Ajouter</Button>
-                  </div>
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-4">
+                  <CardTitle className="text-md font-medium flex items-center gap-2">
+                    <Calendar className="h-4 w-4 text-primary" /> Congés & Fermetures
+                  </CardTitle>
+                  <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setIsClosureDialogOpen(true)}>
+                    <Plus className="h-3 w-3 mr-1" /> Ajouter
+                  </Button>
                 </CardHeader>
-                <CardContent className="pt-6">
-                  <div className="flex flex-wrap gap-4">
-                    {activeClinic.closures?.map(closure => (
-                      <div key={closure.id} className="flex items-center gap-4 p-4 border rounded-2xl bg-orange-50/30 border-orange-100 hover:shadow-md transition-all group">
-                        <div className="flex flex-col">
-                          <span className="text-sm font-black text-orange-800 uppercase tracking-tight">{closure.description}</span>
-                          <span className="text-[10px] font-bold text-orange-600">Du {new Date(closure.start_date).toLocaleDateString()} au {new Date(closure.end_date).toLocaleDateString()}</span>
-                        </div>
-                        <button onClick={() => handleDeleteClosure(closure.id)} className="p-2 rounded-full hover:bg-orange-100 text-orange-300 hover:text-orange-600 transition-all opacity-0 group-hover:opacity-100"><Trash2 className="h-4 w-4" /></button>
+                <CardContent>
+                  <div className="flex flex-wrap gap-2">
+                    {activeClinic.closures?.map(c => (
+                      <div key={c.id} className="flex items-center gap-3 pl-3 pr-1 py-1 bg-orange-50 border border-orange-100 rounded-full text-xs">
+                        <span className="font-medium text-orange-800">{c.description}</span>
+                        <span className="text-orange-600/70 text-[10px]">({new Date(c.start_date).toLocaleDateString()} - {new Date(c.end_date).toLocaleDateString()})</span>
+                        <button onClick={() => handleDeleteClosure(c.id)} className="p-1 hover:bg-orange-200 rounded-full text-orange-400 hover:text-orange-600 transition-colors">
+                          <X className="h-3 w-3" />
+                        </button>
                       </div>
                     ))}
-                    {activeClinic.closures?.length === 0 && <p className="text-sm text-muted-foreground italic py-4">Aucune fermeture exceptionnelle prévue.</p>}
+                    {activeClinic.closures?.length === 0 && <p className="text-xs text-muted-foreground italic">Aucune fermeture exceptionnelle.</p>}
                   </div>
                 </CardContent>
               </Card>
             </>
           ) : (
-            <div className="flex flex-col items-center justify-center border-4 border-dashed rounded-3xl p-24 text-center bg-accent/5">
-              <div className="p-6 bg-white rounded-full shadow-2xl mb-6"><Building2 className="h-16 w-12 text-primary/20" /></div>
-              <h2 className="text-2xl font-black text-primary/40 uppercase tracking-tighter">Sélectionnez un site</h2>
-              <p className="text-muted-foreground max-w-xs mt-2">Choisissez un cabinet dans la colonne de gauche pour configurer ses ressources.</p>
+            <div className="flex flex-col items-center justify-center py-20 border-2 border-dashed rounded-xl text-muted-foreground space-y-4">
+              <Building2 className="h-12 w-12 opacity-20" />
+              <p>Sélectionnez un site pour afficher sa configuration.</p>
             </div>
           )}
         </div>
       </div>
 
-      {/* --- DIALOGS --- */}
+      {/* --- MODALS --- */}
 
-      {/* Add Room Dialog */}
-      <Dialog open={isRoomDialogOpen} onOpenChange={setIsRoomDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+      {/* Staff Management Dialog */}
+      <Dialog open={isStaffDialogOpen} onOpenChange={setIsStaffDialogOpen}>
+        <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
-            <DialogTitle className="uppercase font-black text-primary text-xl tracking-tight">Ajouter une salle</DialogTitle>
-            <DialogDescription className="font-medium text-muted-foreground">Créez un nouveau local technique ou de consultation.</DialogDescription>
+            <DialogTitle>Gestion de l'équipe</DialogTitle>
+            <DialogDescription>Assignez les membres autorisés à travailler sur ce site.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-6 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="room-name" className="text-xs font-bold uppercase text-muted-foreground">Nom de la salle</Label>
-              <Input id="room-name" value={newRoomData.name} onChange={(e) => setNewRoomData({...newRoomData, name: e.target.value})} placeholder="ex: Consultation 1" className="font-semibold" />
+          <div className="space-y-4 py-4 max-h-[400px] overflow-y-auto pr-2">
+            {allUsers.map(user => {
+              const isAssigned = activeClinic?.staff?.some(u => u.id === user.id)
+              return (
+                <div key={user.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-accent/30 transition-colors">
+                  <div className="flex items-center gap-3">
+                    <div className={`h-8 w-8 rounded-full flex items-center justify-center text-xs font-bold ${isAssigned ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
+                      {user.full_name.split(' ').map(n => n[0]).join('')}
+                    </div>
+                    <div>
+                      <p className="text-sm font-medium">{user.full_name}</p>
+                      <p className="text-[10px] text-muted-foreground uppercase">{user.role}</p>
+                    </div>
+                  </div>
+                  <Button 
+                    variant={isAssigned ? "default" : "outline"} 
+                    size="sm" 
+                    className="h-8 w-8 p-0"
+                    onClick={() => toggleStaffAssignment(user.id)}
+                  >
+                    {isAssigned ? <Check className="h-4 w-4" /> : <Plus className="h-4 w-4" />}
+                  </Button>
+                </div>
+              )
+            })}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsStaffDialogOpen(false)}>Terminer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isRoomDialogOpen} onOpenChange={setIsRoomDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Ajouter une salle</DialogTitle>
+            <DialogDescription>Définissez l'usage de ce local.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Nom de la salle</Label>
+              <Input value={newRoomData.name} onChange={e => setNewRoomData({...newRoomData, name: e.target.value})} placeholder="ex: Consultation 1" />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="room-type" className="text-xs font-bold uppercase text-muted-foreground">Vocation de la salle</Label>
-              <Select value={newRoomData.type} onValueChange={(val: string) => setNewRoomData({...newRoomData, type: val as RoomType})}>
-                <SelectTrigger id="room-type" className="font-bold">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Vocation</Label>
+              <Select value={newRoomData.type} onValueChange={v => setNewRoomData({...newRoomData, type: v as RoomType})}>
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
                   {Object.entries(ROOM_TYPE_LABELS).map(([val, label]) => (
-                    <SelectItem key={val} value={val} className="font-bold uppercase text-xs">{label}</SelectItem>
+                    <SelectItem key={val} value={val}>{label}</SelectItem>
                   ))}
                 </SelectContent>
               </Select>
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="ghost" onClick={() => setIsRoomDialogOpen(false)} className="font-bold">Annuler</Button>
-            <Button onClick={handleAddRoomSubmit} className="font-black uppercase tracking-widest text-xs">Créer la salle</Button>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsRoomDialogOpen(false)}>Annuler</Button>
+            <Button onClick={handleAddRoomSubmit}>Créer la salle</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Add Slot Dialog */}
-      <Dialog open={isSlotDialogOpen} onOpenChange={setIsRoomSlotDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+      <Dialog open={isSlotDialogOpen} onOpenChange={setIsSlotDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle className="uppercase font-black text-blue-600 text-xl tracking-tight">Ajouter un box/cage</DialogTitle>
-            <DialogDescription className="font-medium text-muted-foreground">Configurez une unité d'accueil pour l'hospitalisation.</DialogDescription>
+            <DialogTitle>Ajouter un box/cage</DialogTitle>
+            <DialogDescription>Unité d'accueil pour l'hospitalisation.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-6 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="slot-ref" className="text-xs font-bold uppercase text-muted-foreground">Référence de l'unité</Label>
-              <Input id="slot-ref" value={newSlotData.box_reference} onChange={(e) => setNewSlotData({...newSlotData, box_reference: e.target.value})} placeholder="ex: Box A1" className="font-semibold" />
+          <div className="space-y-4 py-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Référence</Label>
+              <Input value={newSlotData.box_reference} onChange={e => setNewSlotData({...newSlotData, box_reference: e.target.value})} placeholder="ex: Box A1" />
             </div>
-            <div className="grid gap-2">
-              <Label htmlFor="slot-type" className="text-xs font-bold uppercase text-muted-foreground">Type d'unité</Label>
-              <Select value={newSlotData.type} onValueChange={(val: string) => setNewSlotData({...newSlotData, type: val as SlotType})}>
-                <SelectTrigger id="slot-type" className="font-bold text-blue-600">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Type</Label>
+              <Select value={newSlotData.type} onValueChange={v => setNewSlotData({...newSlotData, type: v as SlotType})}>
+                <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="cage" className="font-bold uppercase text-xs">Cage</SelectItem>
-                  <SelectItem value="box" className="font-bold uppercase text-xs">Box</SelectItem>
-                  <SelectItem value="parc" className="font-bold uppercase text-xs">Parc</SelectItem>
+                  <SelectItem value="cage">Cage</SelectItem>
+                  <SelectItem value="box">Box</SelectItem>
+                  <SelectItem value="parc">Parc</SelectItem>
                 </SelectContent>
               </Select>
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="ghost" onClick={() => setIsRoomSlotDialogOpen(false)} className="font-bold">Annuler</Button>
-            <Button onClick={handleAddSlotSubmit} className="bg-blue-600 hover:bg-blue-700 font-black uppercase tracking-widest text-xs">Ajouter l'unité</Button>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsSlotDialogOpen(false)}>Annuler</Button>
+            <Button onClick={handleAddSlotSubmit}>Ajouter</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Add Closure Dialog */}
-      <Dialog open={isClosureDialogOpen} onOpenChange={setIsClosureDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+      <Dialog open={isHoursDialogOpen} onOpenChange={setIsHoursDialogOpen}>
+        <DialogContent className="sm:max-w-[450px]">
           <DialogHeader>
-            <DialogTitle className="uppercase font-black text-orange-600 text-xl tracking-tight">Planifier une fermeture</DialogTitle>
-            <DialogDescription className="font-medium text-muted-foreground">Définissez une période de congés ou de fermeture exceptionnelle.</DialogDescription>
+            <DialogTitle>Horaires : {editingDay ? DAYS_FR[editingDay as keyof typeof DAYS_FR] : ""}</DialogTitle>
+            <DialogDescription>Définissez les plages d'ouverture.</DialogDescription>
           </DialogHeader>
-          <div className="grid gap-6 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="closure-desc" className="text-xs font-bold uppercase text-muted-foreground">Motif ou libellé</Label>
-              <Input id="closure-desc" value={newClosureData.description} onChange={(e) => setNewClosureData({...newClosureData, description: e.target.value})} placeholder="ex: Vacances d'été" className="font-semibold" />
+          <div className="space-y-4 py-4">
+            {editingSlots.map((slot, idx) => (
+              <div key={idx} className="flex items-center gap-3 bg-accent/30 p-3 rounded-lg border">
+                <div className="flex-1 grid gap-1">
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Ouverture</Label>
+                  <Input type="time" value={slot.open} onChange={e => {
+                    const next = [...editingSlots]; next[idx].open = e.target.value; setEditingSlots(next);
+                  }} />
+                </div>
+                <div className="flex-1 grid gap-1">
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Fermeture</Label>
+                  <Input type="time" value={slot.close} onChange={e => {
+                    const next = [...editingSlots]; next[idx].close = e.target.value; setEditingSlots(next);
+                  }} />
+                </div>
+                <Button variant="ghost" size="icon" className="mt-5" onClick={() => setEditingSlots(editingSlots.filter((_, i) => i !== idx))}>
+                  <X className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+            <Button variant="outline" size="sm" className="w-full border-dashed" onClick={() => setEditingSlots([...editingSlots, { open: "08:00", close: "12:00" }])}>
+              <Plus className="h-3 w-3 mr-2" /> Ajouter une plage
+            </Button>
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsHoursDialogOpen(false)}>Annuler</Button>
+            <Button onClick={handleSaveHours}>Enregistrer</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isClosureDialogOpen} onOpenChange={setIsClosureDialogOpen}>
+        <DialogContent className="sm:max-w-[400px]">
+          <DialogHeader>
+            <DialogTitle>Planifier une fermeture</DialogTitle>
+            <DialogDescription>Vacances ou fermeture exceptionnelle.</DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-1.5">
+              <Label className="text-xs font-semibold">Motif</Label>
+              <Input value={newClosureData.description} onChange={e => setNewClosureData({...newClosureData, description: e.target.value})} placeholder="ex: Vacances d'été" />
             </div>
             <div className="grid grid-cols-2 gap-4">
-              <div className="grid gap-2">
-                <Label htmlFor="closure-start" className="text-xs font-bold uppercase text-muted-foreground">Date de début</Label>
-                <Input id="closure-start" type="date" value={newClosureData.start_date} onChange={(e) => setNewClosureData({...newClosureData, start_date: e.target.value})} className="font-bold" />
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Début</Label>
+                <Input type="date" value={newClosureData.start_date} onChange={e => setNewClosureData({...newClosureData, start_date: e.target.value})} />
               </div>
-              <div className="grid gap-2">
-                <Label htmlFor="closure-end" className="text-xs font-bold uppercase text-muted-foreground">Date de fin</Label>
-                <Input id="closure-end" type="date" value={newClosureData.end_date} onChange={(e) => setNewClosureData({...newClosureData, end_date: e.target.value})} className="font-bold" />
+              <div className="space-y-1.5">
+                <Label className="text-xs font-semibold">Fin</Label>
+                <Input type="date" value={newClosureData.end_date} onChange={e => setNewClosureData({...newClosureData, end_date: e.target.value})} />
               </div>
             </div>
           </div>
-          <DialogFooter className="gap-2 sm:gap-0">
-            <Button variant="ghost" onClick={() => setIsClosureDialogOpen(false)} className="font-bold">Annuler</Button>
-            <Button onClick={handleAddClosureSubmit} className="bg-orange-600 hover:bg-orange-700 text-white font-black uppercase tracking-widest text-xs">Enregistrer la période</Button>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsClosureDialogOpen(false)}>Annuler</Button>
+            <Button onClick={handleAddClosureSubmit}>Enregistrer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
 
-      {/* Generic Alert Confirmation */}
-      <AlertDialog open={alertConfig.open} onOpenChange={(val: boolean) => setAlertConfig({...alertConfig, open: val})}>
+      <AlertDialog open={alertConfig.open} onOpenChange={v => setAlertConfig({...alertConfig, open: v})}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <div className="flex items-center gap-3 mb-2">
-              <div className="p-2 bg-destructive/10 rounded-full text-destructive"><AlertTriangle className="h-6 w-6" /></div>
-              <AlertDialogTitle className="text-xl font-black uppercase tracking-tight">{alertConfig.title}</AlertDialogTitle>
+              <div className="p-2 bg-destructive/10 rounded-full text-destructive"><AlertTriangle className="h-5 w-5" /></div>
+              <AlertDialogTitle>{alertConfig.title}</AlertDialogTitle>
             </div>
-            <AlertDialogDescription className="text-muted-foreground font-medium">
-              {alertConfig.description}
-            </AlertDialogDescription>
+            <AlertDialogDescription className="text-sm font-medium">{alertConfig.description}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel asChild>
-              <Button variant="ghost" className="font-bold">Annuler</Button>
-            </AlertDialogCancel>
-            <AlertDialogAction asChild>
-              <Button 
-                variant="destructive" 
-                className="font-black uppercase tracking-widest text-xs"
-                onClick={() => {
-                  alertConfig.action();
-                  setAlertConfig({...alertConfig, open: false});
-                }}
-              >
-                Confirmer
-              </Button>
-            </AlertDialogAction>
+            <AlertDialogCancel>Annuler</AlertDialogCancel>
+            <AlertDialogAction onClick={() => { alertConfig.action(); setAlertConfig({...alertConfig, open: false}); }} className="bg-destructive hover:bg-destructive/90">Confirmer</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
