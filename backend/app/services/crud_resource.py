@@ -6,11 +6,13 @@ from sqlalchemy.orm import selectinload
 from app.models.clinic import Clinic
 from app.models.room import Room
 from app.models.hospitalization_slot import HospitalizationSlot
+from app.models.clinic_closure import ClinicClosure
 from app.models.user import User
 from app.schemas.resource import (
     ClinicCreate, ClinicUpdate, 
     RoomCreate, RoomUpdate, 
-    HospitalizationSlotCreate, HospitalizationSlotUpdate
+    HospitalizationSlotCreate, HospitalizationSlotUpdate,
+    ClinicClosureCreate
 )
 
 # --- Cliniques ---
@@ -18,14 +20,14 @@ async def create_clinic(db: AsyncSession, clinic_in: ClinicCreate) -> Clinic:
     db_clinic = Clinic(**clinic_in.model_dump())
     db.add(db_clinic)
     await db.commit()
-    
-    # Re-récupérer avec les relations chargées pour éviter l'erreur de validation FastAPI
     return await get_clinic_by_id(db, db_clinic.id)
 
 async def get_clinics(db: AsyncSession) -> List[Clinic]:
     result = await db.execute(
         select(Clinic).options(
-            selectinload(Clinic.rooms).selectinload(Room.slots)
+            selectinload(Clinic.rooms).selectinload(Room.slots),
+            selectinload(Clinic.closures),
+            selectinload(Clinic.staff)
         )
     )
     return result.scalars().all()
@@ -34,9 +36,30 @@ async def get_clinic_by_id(db: AsyncSession, clinic_id: int) -> Optional[Clinic]
     result = await db.execute(
         select(Clinic)
         .filter(Clinic.id == clinic_id)
-        .options(selectinload(Clinic.rooms).selectinload(Room.slots))
+        .options(
+            selectinload(Clinic.rooms).selectinload(Room.slots),
+            selectinload(Clinic.closures),
+            selectinload(Clinic.staff)
+        )
     )
     return result.scalars().first()
+
+# --- Fermetures ---
+async def create_clinic_closure(db: AsyncSession, closure_in: ClinicClosureCreate) -> ClinicClosure:
+    db_closure = ClinicClosure(**closure_in.model_dump())
+    db.add(db_closure)
+    await db.commit()
+    await db.refresh(db_closure)
+    return db_closure
+
+async def delete_clinic_closure(db: AsyncSession, closure_id: int) -> bool:
+    result = await db.execute(select(ClinicClosure).filter(ClinicClosure.id == closure_id))
+    closure = result.scalars().first()
+    if not closure:
+        return False
+    await db.delete(closure)
+    await db.commit()
+    return True
 
 async def update_clinic(db: AsyncSession, clinic_id: int, clinic_in: ClinicUpdate) -> Optional[Clinic]:
     clinic = await get_clinic_by_id(db, clinic_id)

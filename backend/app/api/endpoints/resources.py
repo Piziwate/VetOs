@@ -6,6 +6,7 @@ from app.schemas.resource import (
     Clinic, ClinicCreate, ClinicUpdate,
     Room, RoomCreate, RoomUpdate,
     HospitalizationSlot, HospitalizationSlotCreate, HospitalizationSlotUpdate,
+    ClinicClosure, ClinicClosureCreate,
     StaffAssignment
 )
 from app.services import crud_resource
@@ -78,6 +79,18 @@ async def delete_slot(slot_id: int, db: AsyncSession = Depends(deps.get_db)):
     success = await crud_resource.delete_hospitalization_slot(db, slot_id)
     if not success:
         raise HTTPException(status_code=404, detail="Slot non trouvé")
+    return {"status": "success"}
+
+# --- Fermetures ---
+@router.post("/closures", response_model=ClinicClosure)
+async def create_closure(closure_in: ClinicClosureCreate, db: AsyncSession = Depends(deps.get_db)):
+    return await crud_resource.create_clinic_closure(db, closure_in)
+
+@router.delete("/closures/{closure_id}")
+async def delete_closure(closure_id: int, db: AsyncSession = Depends(deps.get_db)):
+    success = await crud_resource.delete_clinic_closure(db, closure_id)
+    if not success:
+        raise HTTPException(status_code=404, detail="Fermeture non trouvée")
     return {"status": "success"}
 
 # --- Assignation Personnel ---

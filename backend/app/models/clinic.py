@@ -16,3 +16,5 @@ class Clinic(Base):
     
     rooms = relationship("Room", back_populates="clinic", cascade="all, delete-orphan")
     staff = relationship("User", secondary="user_clinic", back_populates="clinics")
+    closures = relationship("ClinicClosure", back_populates="clinic", cascade="all, delete-orphan")
+

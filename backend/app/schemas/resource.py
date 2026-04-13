@@ -1,7 +1,22 @@
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
-from datetime import time
+from datetime import time, date
 from enum import Enum
+
+# --- Fermetures ---
+class ClinicClosureBase(BaseModel):
+    start_date: date
+    end_date: date
+    description: Optional[str] = None
+
+class ClinicClosureCreate(ClinicClosureBase):
+    clinic_id: int
+
+class ClinicClosure(ClinicClosureBase):
+    id: int
+    clinic_id: int
+    class Config:
+        from_attributes = True
 
 # --- Horaires ---
 class OpeningHoursSlot(BaseModel):

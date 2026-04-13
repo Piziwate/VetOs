@@ -13,6 +13,7 @@ import { Clients } from "./pages/clients"
 import { ClientDetail } from "./pages/client-detail"
 import { Login } from "./pages/Login"
 import { Settings } from "./pages/settings"
+import { Resources } from "./pages/resources"
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem("token")
@@ -79,6 +80,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Settings />
+                </ProtectedRoute>
+              } 
+            />
+
+            <Route 
+              path="/resources" 
+              element={
+                <ProtectedRoute>
+                  <Resources />
                 </ProtectedRoute>
               } 
             />

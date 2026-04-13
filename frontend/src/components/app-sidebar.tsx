@@ -10,7 +10,8 @@ import {
   LifeBuoy,
   Send,
   FileText,
-  PieChart
+  PieChart,
+  Building2
 } from "lucide-react"
 
 import { NavMain } from "@/components/nav-main"
@@ -68,6 +69,11 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         title: t("menu.settings"),
         url: "/settings",
         icon: Settings2,
+      },
+      {
+        title: "Ressources",
+        url: "/resources",
+        icon: Building2,
       },
     ],
     navSecondary: [
