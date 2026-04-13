@@ -1,5 +1,6 @@
 import asyncio
 import logging
+from app.db import base  # noqa: F401 - Import all models for SQLAlchemy
 from app.db.session import AsyncSessionLocal
 from app.services.crud_user import user as crud_user
 from app.schemas.user_token import UserCreate
@@ -10,6 +11,7 @@ logger = logging.getLogger(__name__)
 
 async def init_db() -> None:
     async with AsyncSessionLocal() as db:
+        # 1. Ensure Admin User exists
         user = await crud_user.get_by_email(db, email="admin@vetos.ch")
         if not user:
             user_in = UserCreate(
