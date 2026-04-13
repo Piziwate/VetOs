@@ -17,6 +17,7 @@ import { NavMain } from "@/components/nav-main"
 import { NavProjects } from "@/components/nav-projects"
 import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
+import { useSettings } from "@/hooks/use-settings"
 import {
   Sidebar,
   SidebarContent,
@@ -29,6 +30,11 @@ import {
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation()
+  const { getSetting } = useSettings()
+
+  const practiceName = getSetting("practice_name")
+  const practiceWebsite = getSetting("practice_website")
+  const displayName = practiceName || t("app_name")
 
   const data = {
     user: {
@@ -71,8 +77,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: LifeBuoy,
       },
       {
-        title: "Feedback",
-        url: "#",
+        title: practiceWebsite ? `${practiceName || "Clinique"} Website` : "Feedback",
+        url: practiceWebsite || "#",
         icon: Send,
       },
     ],
@@ -104,8 +110,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
                   <PawPrint className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
-                  <span className="truncate font-medium uppercase tracking-wider">{t("app_name")}</span>
-                  <span className="truncate text-xs">Veterinary OS</span>
+                  <span className="truncate font-medium uppercase tracking-wider">{displayName}</span>
+                  <span className="truncate text-xs">{practiceName ? "Veterinary OS" : "Practice Management"}</span>
                 </div>
               </Link>
             </SidebarMenuButton>
