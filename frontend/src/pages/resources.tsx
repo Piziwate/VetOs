@@ -65,6 +65,65 @@ export const Resources = () => {
     }
   }
 
+  const handleUpdateClinicField = async (field: keyof Clinic, value: any) => {
+    if (!activeClinic) return
+    
+    // Optimistic update
+    const updatedClinic = { ...activeClinic, [field]: value }
+    setActiveClinic(updatedClinic)
+    setClinics(clinics.map(c => c.id === activeClinic.id ? updatedClinic : c))
+
+    try {
+      await api.put(`/resources/clinics/${activeClinic.id}`, { [field]: value })
+    } catch (error) {
+      console.error("Failed to update clinic", error)
+      // Revert on error could be implemented here
+    }
+  }
+
+  const handleAddRoom = async () => {
+    if (!activeClinic) return
+    const roomName = prompt("Nom de la nouvelle salle ?")
+    if (!roomName) return
+    
+    try {
+      const response = await api.post("/resources/rooms", {
+        name: roomName,
+        type: "consultation", // default type
+        clinic_id: activeClinic.id
+      })
+      const updatedClinic = { ...activeClinic, rooms: [...activeClinic.rooms, response.data] }
+      setActiveClinic(updatedClinic)
+      setClinics(clinics.map(c => c.id === activeClinic.id ? updatedClinic : c))
+    } catch (error) {
+      console.error("Failed to create room", error)
+    }
+  }
+
+  const handleDeleteRoom = async (roomId: number) => {
+    if (!activeClinic || !window.confirm("Êtes-vous sûr de vouloir supprimer cette salle ?")) return
+    try {
+      await api.delete(`/resources/rooms/${roomId}`)
+      const updatedClinic = { ...activeClinic, rooms: activeClinic.rooms.filter((r: any) => r.id !== roomId) }
+      setActiveClinic(updatedClinic)
+      setClinics(clinics.map(c => c.id === activeClinic.id ? updatedClinic : c))
+    } catch (error) {
+      console.error("Failed to delete room", error)
+    }
+  }
+
+  const handleDeleteClinic = async () => {
+    if (!activeClinic || !window.confirm("Êtes-vous sûr de vouloir supprimer cette clinique ?")) return
+    try {
+      await api.delete(`/resources/clinics/${activeClinic.id}`)
+      const newClinics = clinics.filter(c => c.id !== activeClinic.id)
+      setClinics(newClinics)
+      setActiveClinic(newClinics.length > 0 ? newClinics[0] : null)
+    } catch (error) {
+      console.error("Failed to delete clinic", error)
+    }
+  }
+
   if (loading) return <div>Chargement des ressources...</div>
 
   return (
@@ -101,24 +160,49 @@ export const Resources = () => {
             <>
               {/* Infos Générales */}
               <Card>
-                <CardHeader>
-                  <CardTitle className="text-xl">Informations du Cabinet</CardTitle>
-                  <CardDescription>Coordonnées et identité du site de {activeClinic.name}</CardDescription>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0">
+                  <div>
+                    <CardTitle className="text-xl">Informations du Cabinet</CardTitle>
+                    <CardDescription>Coordonnées et identité du site de {activeClinic.name}</CardDescription>
+                  </div>
+                  <Button variant="ghost" size="icon" className="text-destructive" onClick={handleDeleteClinic}>
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
                 </CardHeader>
                 <CardContent className="grid gap-6">
                   <div className="grid grid-cols-2 gap-4">
                     <div className="grid gap-2">
                       <Label htmlFor="name">Nom du site</Label>
-                      <Input id="name" defaultValue={activeClinic.name} />
+                      <Input 
+                        id="name" 
+                        value={activeClinic.name || ""} 
+                        onChange={(e) => handleUpdateClinicField("name", e.target.value)} 
+                      />
                     </div>
                     <div className="grid gap-2">
                       <Label htmlFor="email">Email spécifique</Label>
-                      <Input id="email" defaultValue={activeClinic.email} />
+                      <Input 
+                        id="email" 
+                        value={activeClinic.email || ""} 
+                        onChange={(e) => handleUpdateClinicField("email", e.target.value)} 
+                      />
                     </div>
                   </div>
                   <div className="grid gap-2">
                     <Label htmlFor="address">Adresse physique</Label>
-                    <Input id="address" defaultValue={activeClinic.address} />
+                    <Input 
+                      id="address" 
+                      value={activeClinic.address || ""} 
+                      onChange={(e) => handleUpdateClinicField("address", e.target.value)} 
+                    />
+                  </div>
+                  <div className="grid gap-2">
+                    <Label htmlFor="phone">Téléphone</Label>
+                    <Input 
+                      id="phone" 
+                      value={activeClinic.phone || ""} 
+                      onChange={(e) => handleUpdateClinicField("phone", e.target.value)} 
+                    />
                   </div>
                 </CardContent>
               </Card>
@@ -131,7 +215,7 @@ export const Resources = () => {
                       <CardTitle className="text-lg">Salles & Plateaux</CardTitle>
                       <CardDescription>Salles de soins et chirurgie</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm"><Plus className="h-4 w-4" /></Button>
+                    <Button variant="outline" size="sm" onClick={handleAddRoom}><Plus className="h-4 w-4" /></Button>
                   </CardHeader>
                   <CardContent>
                     <div className="flex flex-col gap-3">
@@ -145,7 +229,7 @@ export const Resources = () => {
                               <Badge variant="secondary" className="text-[10px] uppercase">{room.type}</Badge>
                             </div>
                           </div>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive"><Trash2 className="h-4 w-4" /></Button>
+                          <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => handleDeleteRoom(room.id)}><Trash2 className="h-4 w-4" /></Button>
                         </div>
                       ))}
                     </div>

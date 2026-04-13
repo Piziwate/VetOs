@@ -31,6 +31,11 @@ class HospitalizationSlotBase(BaseModel):
 class HospitalizationSlotCreate(HospitalizationSlotBase):
     room_id: int
 
+class HospitalizationSlotUpdate(BaseModel):
+    box_reference: Optional[str] = None
+    type: Optional[SlotType] = None
+    attributes: Optional[Dict[str, Any]] = None
+
 class HospitalizationSlot(HospitalizationSlotBase):
     id: int
     room_id: int
@@ -53,6 +58,11 @@ class RoomBase(BaseModel):
 class RoomCreate(RoomBase):
     clinic_id: int
 
+class RoomUpdate(BaseModel):
+    name: Optional[str] = None
+    type: Optional[RoomType] = None
+    attributes: Optional[Dict[str, Any]] = None
+
 class Room(RoomBase):
     id: int
     clinic_id: int
@@ -70,6 +80,13 @@ class ClinicBase(BaseModel):
 
 class ClinicCreate(ClinicBase):
     pass
+
+class ClinicUpdate(BaseModel):
+    name: Optional[str] = None
+    address: Optional[str] = None
+    phone: Optional[str] = None
+    email: Optional[str] = None
+    opening_hours: Optional[OpeningHours] = None
 
 class Clinic(ClinicBase):
     id: int
