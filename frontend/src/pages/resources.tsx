@@ -489,8 +489,8 @@ export const Resources = () => {
               <TabsContent value="infrastructure" className="space-y-8 animate-in fade-in duration-300">
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                   {/* Salles */}
-                  <Card className="flex flex-col">
-                    <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
+                  <Card className="flex flex-col border-none shadow-none bg-accent/5">
+                    <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50">
                       <CardTitle className="text-md font-medium flex items-center gap-2">
                         <DoorOpen className="h-4 w-4 text-primary" /> Locaux techniques
                       </CardTitle>
@@ -498,7 +498,7 @@ export const Resources = () => {
                         <Plus className="h-3 w-3" />
                       </Button>
                     </CardHeader>
-                    <CardContent className="pt-4 flex-1">
+                    <CardContent className="pt-4 flex-1 px-4">
                       <div className="space-y-2">
                         {activeClinic.rooms?.map(room => {
                           const Icon = ROOM_TYPE_ICONS[room.type] || DoorOpen
@@ -506,7 +506,7 @@ export const Resources = () => {
                             <div 
                               key={room.id}
                               onClick={() => setActiveRoomId(room.id)}
-                              className={`flex items-center justify-between p-2.5 border rounded-lg cursor-pointer transition-all ${activeRoomId === room.id ? "border-primary bg-primary/5 ring-1 ring-primary/20 shadow-sm" : "hover:bg-accent/50 border-transparent bg-accent/10"}`}
+                              className={`flex items-center justify-between p-2.5 border rounded-lg cursor-pointer transition-all ${activeRoomId === room.id ? "border-primary bg-primary/5 ring-1 ring-primary/20 shadow-sm" : "hover:bg-accent/50 border-transparent bg-background/50"}`}
                             >
                               <div className="flex items-center gap-3 text-left">
                                 <div className={`p-1.5 rounded-md ${activeRoomId === room.id ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"}`}>
@@ -538,8 +538,8 @@ export const Resources = () => {
                   </Card>
 
                   {/* Hospitalisation */}
-                  <Card className="flex flex-col">
-                    <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
+                  <Card className="flex flex-col border-none shadow-none bg-accent/5">
+                    <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50">
                       <CardTitle className="text-md font-medium flex items-center gap-2">
                         <Bed className="h-4 w-4 text-primary" /> Hospitalisation
                       </CardTitle>
@@ -549,7 +549,7 @@ export const Resources = () => {
                         </Button>
                       )}
                     </CardHeader>
-                    <CardContent className="pt-4 flex-1">
+                    <CardContent className="pt-4 flex-1 px-4">
                       {!activeRoom ? (
                         <div className="flex flex-col items-center justify-center py-12 text-center space-y-2">
                           <DoorOpen className="h-8 w-8 text-muted-foreground/20" />
@@ -563,7 +563,7 @@ export const Resources = () => {
                       ) : (
                         <div className="grid grid-cols-2 gap-2">
                           {activeRoom.slots?.map(slot => (
-                            <div key={slot.id} className="flex items-center justify-between px-3 py-2 bg-primary/5 rounded-lg border text-sm hover:border-primary/30 transition-all group">
+                            <div key={slot.id} className="flex items-center justify-between px-3 py-2 bg-background/50 rounded-lg border border-transparent hover:border-primary/30 transition-all group shadow-sm">
                               <span className="font-semibold text-xs truncate">{slot.box_reference}</span>
                               <button onClick={() => handleDeleteSlot(activeRoom.id, slot.id)} className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all">
                                 <X className="h-3 w-3" />
@@ -580,27 +580,32 @@ export const Resources = () => {
 
               <TabsContent value="planning" className="space-y-8 animate-in fade-in duration-300">
                 {/* Horaires */}
-                <Card>
-                  <CardHeader className="pb-4 border-b">
-                    <CardTitle className="text-lg flex items-center gap-2">
-                      <Clock className="h-4 w-4 text-primary" /> Horaires d'exploitation
+                <Card className="border-none shadow-none bg-accent/5">
+                  <CardHeader className="pb-4 border-b border-border/50">
+                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <Clock className="h-4 w-4 text-primary" /> Horaires d'ouverture
                     </CardTitle>
-                    <CardDescription>Plages d'ouverture utilisées pour les rendez-vous.</CardDescription>
+                    <CardDescription className="text-xs">Utilisés pour le moteur de réservation et les agendas.</CardDescription>
                   </CardHeader>
                   <CardContent className="pt-6">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
                       {(Object.keys(DAYS_FR) as Array<keyof typeof DAYS_FR>).map(day => {
                         const slots = activeClinic.opening_hours?.[day] || []
                         return (
-                          <div key={day} className="flex flex-col gap-2 p-3 border rounded-lg bg-muted/30 group hover:bg-muted/50 transition-colors">
-                            <p className="text-[10px] font-bold uppercase text-muted-foreground border-b border-border pb-1 mb-1">{DAYS_FR[day]}</p>
-                            <div className="space-y-1 min-h-[50px] flex flex-col justify-center">
+                          <div key={day} className="flex flex-col gap-1.5 p-2 rounded-md border border-border/50 bg-background/50 group">
+                            <p className="text-[10px] font-bold uppercase text-muted-foreground/70">{DAYS_FR[day]}</p>
+                            <div className="space-y-1 min-h-[32px] flex flex-col justify-center">
                               {slots.map((s, idx) => (
-                                <p key={idx} className="text-[10px] font-medium text-center bg-background border border-border rounded py-1 shadow-sm">{s.open} - {s.close}</p>
+                                <p key={idx} className="text-[10px] font-medium text-center text-primary">{s.open} — {s.close}</p>
                               ))}
-                              {slots.length === 0 && <p className="text-[10px] text-muted-foreground/40 font-medium text-center py-2 uppercase">Fermé</p>}
+                              {slots.length === 0 && <p className="text-[10px] text-muted-foreground/30 text-center uppercase font-bold">Fermé</p>}
                             </div>
-                            <Button variant="ghost" size="sm" className="h-6 text-[9px] uppercase font-bold mt-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleOpenHoursDialog(day)}>Éditer</Button>
+                            <button 
+                              onClick={() => handleOpenHoursDialog(day)}
+                              className="text-[9px] uppercase font-bold text-primary/40 hover:text-primary opacity-0 group-hover:opacity-100 transition-all pt-1 border-t border-border/20 mt-1"
+                            >
+                              Éditer
+                            </button>
                           </div>
                         )
                       })}
@@ -609,24 +614,24 @@ export const Resources = () => {
                 </Card>
 
                 {/* Congés */}
-                <Card>
-                  <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
+                <Card className="border-none shadow-none bg-accent/5">
+                  <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50">
                     <div className="space-y-1">
-                      <CardTitle className="text-lg flex items-center gap-2">
-                        <CalendarIcon className="h-4 w-4 text-primary" /> Congés & Fermetures exceptionnelles
+                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                        <CalendarIcon className="h-4 w-4 text-primary" /> Congés & Fermetures
                       </CardTitle>
-                      <CardDescription>Périodes où le site est totalement fermé au public.</CardDescription>
+                      <CardDescription className="text-xs">Périodes exceptionnelles de fermeture du site.</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => setIsClosureDialogOpen(true)}>
+                    <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setIsClosureDialogOpen(true)}>
                       <Plus className="h-3.5 w-3.5 mr-2" /> Programmer
                     </Button>
                   </CardHeader>
                   <CardContent className="pt-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {activeClinic.closures?.map(c => (
-                        <div key={c.id} className="flex items-center justify-between p-3 bg-muted/20 border border-border rounded-xl transition-all hover:shadow-sm group">
-                          <div className="flex flex-col gap-0.5">
-                            <span className="text-sm font-semibold">{c.description}</span>
+                        <div key={c.id} className="flex items-center justify-between p-3 bg-background/50 border border-border rounded-xl transition-all hover:shadow-sm group">
+                          <div className="flex flex-col gap-0.5 text-left">
+                            <span className="text-xs font-semibold">{c.description}</span>
                             <span className="text-[10px] font-medium text-muted-foreground uppercase">
                               {format(new Date(c.start_date), "dd.MM.yyyy")} — {format(new Date(c.end_date), "dd.MM.yyyy")}
                             </span>
@@ -637,7 +642,7 @@ export const Resources = () => {
                         </div>
                       ))}
                       {activeClinic.closures?.length === 0 && (
-                        <div className="col-span-full flex flex-col items-center justify-center py-8 text-center border border-dashed rounded-xl space-y-2">
+                        <div className="col-span-full flex flex-col items-center justify-center py-8 text-center border border-dashed rounded-xl space-y-2 opacity-50">
                           <CalendarIcon className="h-6 w-6 text-muted-foreground/20" />
                           <p className="text-xs text-muted-foreground">Aucune fermeture programmée.</p>
                         </div>
@@ -674,7 +679,7 @@ export const Resources = () => {
             {allUsers.map(user => {
               const isAssigned = activeClinic?.staff?.some(u => u.id === user.id)
               return (
-                <div key={user.id} className="flex items-center justify-between p-3 border rounded-xl hover:bg-accent/30 transition-colors">
+                <div key={user.id} className="flex items-center justify-between p-3 border rounded-xl hover:bg-accent/30 transition-colors text-left">
                   <div className="flex items-center gap-3">
                     <div className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold border-2 ${isAssigned ? "bg-primary/10 border-primary text-primary" : "bg-muted border-transparent text-muted-foreground"}`}>
                       {user.full_name.split(' ').map(n => n[0]).join('')}
@@ -709,7 +714,7 @@ export const Resources = () => {
             <DialogTitle className="text-lg font-bold">Ajouter un local</DialogTitle>
             <DialogDescription>Définissez l'usage de cette salle.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 text-left">
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold uppercase text-muted-foreground">Nom de la salle</Label>
               <Input value={newRoomData.name} onChange={e => setNewRoomData({...newRoomData, name: e.target.value})} placeholder="ex: Consultation 1" className="font-medium" />
@@ -730,7 +735,7 @@ export const Resources = () => {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsRoomDialogOpen(false)}>Annuler</Button>
-            <Button onClick={handleAddRoomSubmit}>Créer</Button>
+            <Button onClick={handleAddRoomSubmit}>Créer la salle</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -742,7 +747,7 @@ export const Resources = () => {
             <DialogTitle className="text-lg font-bold text-primary">Nouveau box/cage</DialogTitle>
             <DialogDescription>Unité d'accueil individuelle pour l'hospitalisation.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 text-left">
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold uppercase text-muted-foreground">Référence visuelle</Label>
               <Input value={newSlotData.box_reference} onChange={e => setNewSlotData({...newSlotData, box_reference: e.target.value})} placeholder="ex: Box A1" className="font-bold" />
@@ -775,7 +780,7 @@ export const Resources = () => {
             <DialogTitle className="text-lg font-bold">Horaires : {editingDay ? DAYS_FR[editingDay as keyof typeof DAYS_FR] : ""}</DialogTitle>
             <DialogDescription>Gérez les plages d'ouverture pour ce site.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 text-left">
             {editingSlots.map((slot, idx) => (
               <div key={idx} className="flex items-center gap-3 bg-muted/30 p-3 rounded-xl border border-border">
                 <div className="flex-1 grid gap-1">
@@ -811,7 +816,7 @@ export const Resources = () => {
       <Dialog open={isClosureDialogOpen} onOpenChange={setIsClosureDialogOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold">Fermeture exceptionnelle</DialogTitle>
+            <DialogTitle className="text-lg font-bold text-orange-600">Fermeture exceptionnelle</DialogTitle>
             <DialogDescription>Programmez une période de congés ou travaux.</DialogDescription>
           </DialogHeader>
           <div className="space-y-4 py-4 text-left">
@@ -828,12 +833,12 @@ export const Resources = () => {
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-full justify-start text-left font-normal",
+                        "w-full justify-start text-left font-normal h-9",
                         !newClosureData.start_date && "text-muted-foreground"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {newClosureData.start_date ? format(newClosureData.start_date, "PPP", { locale: fr }) : <span>Choisir une date</span>}
+                      {newClosureData.start_date ? format(newClosureData.start_date, "dd.MM.yyyy") : <span>Choisir...</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -841,6 +846,7 @@ export const Resources = () => {
                       mode="single"
                       selected={newClosureData.start_date}
                       onSelect={(date) => setNewClosureData({...newClosureData, start_date: date})}
+                      locale={fr}
                       initialFocus
                     />
                   </PopoverContent>
@@ -854,12 +860,12 @@ export const Resources = () => {
                     <Button
                       variant={"outline"}
                       className={cn(
-                        "w-full justify-start text-left font-normal",
+                        "w-full justify-start text-left font-normal h-9",
                         !newClosureData.end_date && "text-muted-foreground"
                       )}
                     >
                       <CalendarIcon className="mr-2 h-4 w-4" />
-                      {newClosureData.end_date ? format(newClosureData.end_date, "PPP", { locale: fr }) : <span>Choisir une date</span>}
+                      {newClosureData.end_date ? format(newClosureData.end_date, "dd.MM.yyyy") : <span>Choisir...</span>}
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="start">
@@ -867,6 +873,7 @@ export const Resources = () => {
                       mode="single"
                       selected={newClosureData.end_date}
                       onSelect={(date) => setNewClosureData({...newClosureData, end_date: date})}
+                      locale={fr}
                       initialFocus
                     />
                   </PopoverContent>
@@ -885,11 +892,11 @@ export const Resources = () => {
       <AlertDialog open={alertConfig.open} onOpenChange={v => setAlertConfig({...alertConfig, open: v})}>
         <AlertDialogContent className="rounded-2xl">
           <AlertDialogHeader>
-            <div className="flex items-center gap-3 mb-2">
+            <div className="flex items-center gap-3 mb-2 text-left">
               <div className="p-2 bg-destructive/10 rounded-full text-destructive shadow-inner"><AlertTriangle className="h-6 w-6" /></div>
               <AlertDialogTitle>{alertConfig.title}</AlertDialogTitle>
             </div>
-            <AlertDialogDescription className="text-sm font-medium">{alertConfig.description}</AlertDialogDescription>
+            <AlertDialogDescription className="text-sm font-medium text-left">{alertConfig.description}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-0 pt-4">
             <AlertDialogCancel asChild>
