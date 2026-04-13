@@ -13,8 +13,9 @@ async def create_clinic(db: AsyncSession, clinic_in: ClinicCreate) -> Clinic:
     db_clinic = Clinic(**clinic_in.model_dump())
     db.add(db_clinic)
     await db.commit()
-    await db.refresh(db_clinic)
-    return db_clinic
+    
+    # Re-récupérer avec les relations chargées pour éviter l'erreur de validation FastAPI
+    return await get_clinic_by_id(db, db_clinic.id)
 
 async def get_clinics(db: AsyncSession) -> List[Clinic]:
     result = await db.execute(
@@ -37,8 +38,11 @@ async def create_room(db: AsyncSession, room_in: RoomCreate) -> Room:
     db_room = Room(**room_in.model_dump())
     db.add(db_room)
     await db.commit()
-    await db.refresh(db_room)
-    return db_room
+    
+    result = await db.execute(
+        select(Room).filter(Room.id == db_room.id).options(selectinload(Room.slots))
+    )
+    return result.scalars().first()
 
 # --- Slots d'Hospitalisation ---
 async def create_hospitalization_slot(db: AsyncSession, slot_in: HospitalizationSlotCreate) -> HospitalizationSlot:
