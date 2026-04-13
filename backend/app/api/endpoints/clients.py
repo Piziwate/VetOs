@@ -1,6 +1,6 @@
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.ext.asyncio import AsyncSession
-from typing import List, Optional
+from typing import Optional
 from app.api.deps import get_db
 from app.services.crud_client_patient import client as crud_client
 from app.schemas.client_patient import Client, ClientCreate, ClientUpdate, ClientPagination, ClientWithPatients

@@ -1,6 +1,6 @@
 from typing import List, Optional, Dict, Any
 from pydantic import BaseModel, Field
-from datetime import time, date
+from datetime import date
 from enum import Enum
 
 # --- Fermetures ---

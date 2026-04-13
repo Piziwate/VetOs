@@ -7,11 +7,13 @@ import { Badge } from "@/components/ui/badge"
 import { 
   Plus, Building2, DoorOpen, Bed, Trash2, 
   Stethoscope, Scissors, Activity, Search,
-  Clock, Calendar, AlertTriangle, X, Users,
+  Clock, Calendar as CalendarIcon, AlertTriangle, X, Users,
   UserPlus, Check, LayoutGrid, Timer
 } from "lucide-react"
 import api from "@/lib/api"
 import type { Clinic, RoomType, SlotType, OpeningHoursSlot, StaffMember } from "@/types/resource"
+import { format } from "date-fns"
+import { fr } from "date-fns/locale"
 
 import {
   Dialog,
@@ -47,6 +49,14 @@ import {
   TabsList,
   TabsTrigger,
 } from "@/components/ui/tabs"
+
+import { Calendar } from "@/components/ui/calendar"
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover"
+import { cn } from "@/lib/utils"
 
 const ROOM_TYPE_LABELS: Record<RoomType, string> = {
   consultation: "Consultation",
@@ -89,7 +99,11 @@ export const Resources = () => {
   const [newSlotData, setNewSlotData] = useState({ box_reference: "", type: "cage" as SlotType })
 
   const [isClosureDialogOpen, setIsClosureDialogOpen] = useState(false)
-  const [newClosureData, setNewClosureData] = useState({ description: "", start_date: "", end_date: "" })
+  const [newClosureData, setNewClosureData] = useState<{
+    description: string;
+    start_date: Date | undefined;
+    end_date: Date | undefined;
+  }>({ description: "", start_date: undefined, end_date: undefined })
 
   const [isHoursDialogOpen, setIsHoursDialogOpen] = useState(false)
   const [editingDay, setEditingDay] = useState<string | null>(null)
@@ -277,10 +291,12 @@ export const Resources = () => {
   }
 
   const handleAddClosureSubmit = async () => {
-    if (!activeClinic || !newClosureData.description) return
+    if (!activeClinic || !newClosureData.description || !newClosureData.start_date || !newClosureData.end_date) return
     try {
       const response = await api.post("/resources/closures", {
-        ...newClosureData,
+        description: newClosureData.description,
+        start_date: format(newClosureData.start_date, "yyyy-MM-dd"),
+        end_date: format(newClosureData.end_date, "yyyy-MM-dd"),
         clinic_id: activeClinic.id
       })
       setActiveClinic({
@@ -288,7 +304,7 @@ export const Resources = () => {
         closures: [...(activeClinic.closures || []), response.data]
       })
       setIsClosureDialogOpen(false)
-      setNewClosureData({ description: "", start_date: "", end_date: "" })
+      setNewClosureData({ description: "", start_date: undefined, end_date: undefined })
     } catch (error) {
       console.error("Failed to add closure", error)
     }
@@ -576,13 +592,13 @@ export const Resources = () => {
                       {(Object.keys(DAYS_FR) as Array<keyof typeof DAYS_FR>).map(day => {
                         const slots = activeClinic.opening_hours?.[day] || []
                         return (
-                          <div key={day} className="flex flex-col gap-2 p-3 border rounded-lg bg-accent/5 hover:bg-accent/10 transition-colors group">
-                            <p className="text-[10px] font-bold uppercase text-muted-foreground border-b pb-1 mb-1">{DAYS_FR[day]}</p>
+                          <div key={day} className="flex flex-col gap-2 p-3 border rounded-lg bg-muted/30 group hover:bg-muted/50 transition-colors">
+                            <p className="text-[10px] font-bold uppercase text-muted-foreground border-b border-border pb-1 mb-1">{DAYS_FR[day]}</p>
                             <div className="space-y-1 min-h-[50px] flex flex-col justify-center">
                               {slots.map((s, idx) => (
-                                <p key={idx} className="text-[10px] font-bold text-center bg-white border rounded shadow-sm py-1 text-primary">{s.open} - {s.close}</p>
+                                <p key={idx} className="text-[10px] font-medium text-center bg-background border border-border rounded py-1 shadow-sm">{s.open} - {s.close}</p>
                               ))}
-                              {slots.length === 0 && <p className="text-[10px] text-destructive/50 font-semibold text-center py-2 italic uppercase">Fermé</p>}
+                              {slots.length === 0 && <p className="text-[10px] text-muted-foreground/40 font-medium text-center py-2 uppercase">Fermé</p>}
                             </div>
                             <Button variant="ghost" size="sm" className="h-6 text-[9px] uppercase font-bold mt-2 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => handleOpenHoursDialog(day)}>Éditer</Button>
                           </div>
@@ -597,7 +613,7 @@ export const Resources = () => {
                   <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
                     <div className="space-y-1">
                       <CardTitle className="text-lg flex items-center gap-2">
-                        <Calendar className="h-4 w-4 text-primary" /> Congés & Fermetures exceptionnelles
+                        <CalendarIcon className="h-4 w-4 text-primary" /> Congés & Fermetures exceptionnelles
                       </CardTitle>
                       <CardDescription>Périodes où le site est totalement fermé au public.</CardDescription>
                     </div>
@@ -608,22 +624,22 @@ export const Resources = () => {
                   <CardContent className="pt-6">
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {activeClinic.closures?.map(c => (
-                        <div key={c.id} className="flex items-center justify-between p-3 bg-orange-50/50 border border-orange-100 rounded-xl transition-all hover:shadow-sm">
+                        <div key={c.id} className="flex items-center justify-between p-3 bg-muted/20 border border-border rounded-xl transition-all hover:shadow-sm group">
                           <div className="flex flex-col gap-0.5">
-                            <span className="text-sm font-bold text-orange-900">{c.description}</span>
-                            <span className="text-[10px] font-medium text-orange-600/80 uppercase">
-                              {new Date(c.start_date).toLocaleDateString()} — {new Date(c.end_date).toLocaleDateString()}
+                            <span className="text-sm font-semibold">{c.description}</span>
+                            <span className="text-[10px] font-medium text-muted-foreground uppercase">
+                              {format(new Date(c.start_date), "dd.MM.yyyy")} — {format(new Date(c.end_date), "dd.MM.yyyy")}
                             </span>
                           </div>
-                          <button onClick={() => handleDeleteClosure(c.id)} className="p-1.5 hover:bg-orange-100 rounded-full text-orange-400 hover:text-destructive transition-colors">
+                          <button onClick={() => handleDeleteClosure(c.id)} className="p-1.5 hover:bg-destructive/10 rounded-full text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all">
                             <Trash2 className="h-3.5 w-3.5" />
                           </button>
                         </div>
                       ))}
                       {activeClinic.closures?.length === 0 && (
                         <div className="col-span-full flex flex-col items-center justify-center py-8 text-center border border-dashed rounded-xl space-y-2">
-                          <Calendar className="h-6 w-6 text-muted-foreground/20" />
-                          <p className="text-xs text-muted-foreground italic">Aucune fermeture programmée.</p>
+                          <CalendarIcon className="h-6 w-6 text-muted-foreground/20" />
+                          <p className="text-xs text-muted-foreground">Aucune fermeture programmée.</p>
                         </div>
                       )}
                     </div>
@@ -761,20 +777,20 @@ export const Resources = () => {
           </DialogHeader>
           <div className="space-y-4 py-4">
             {editingSlots.map((slot, idx) => (
-              <div key={idx} className="flex items-center gap-3 bg-primary/5 p-3 rounded-xl border border-primary/10 transition-all hover:bg-primary/10">
+              <div key={idx} className="flex items-center gap-3 bg-muted/30 p-3 rounded-xl border border-border">
                 <div className="flex-1 grid gap-1">
-                  <Label className="text-[10px] font-bold uppercase text-primary/60">Ouverture</Label>
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Ouverture</Label>
                   <Input type="time" value={slot.open} onChange={e => {
                     const next = [...editingSlots]; next[idx].open = e.target.value; setEditingSlots(next);
-                  }} className="font-bold text-primary bg-white" />
+                  }} className="font-bold bg-background" />
                 </div>
                 <div className="flex-1 grid gap-1">
-                  <Label className="text-[10px] font-bold uppercase text-primary/60">Fermeture</Label>
+                  <Label className="text-[10px] font-bold uppercase text-muted-foreground">Fermeture</Label>
                   <Input type="time" value={slot.close} onChange={e => {
                     const next = [...editingSlots]; next[idx].close = e.target.value; setEditingSlots(next);
-                  }} className="font-bold text-primary bg-white" />
+                  }} className="font-bold bg-background" />
                 </div>
-                <Button variant="ghost" size="icon" className="mt-5 text-muted-foreground hover:text-destructive" onClick={() => setEditingSlots(editingSlots.filter((_, i) => i !== idx))}>
+                <Button variant="ghost" size="icon" className="mt-5 hover:text-destructive" onClick={() => setEditingSlots(editingSlots.filter((_, i) => i !== idx))}>
                   <Trash2 className="h-4 w-4" />
                 </Button>
               </div>
@@ -795,28 +811,72 @@ export const Resources = () => {
       <Dialog open={isClosureDialogOpen} onOpenChange={setIsClosureDialogOpen}>
         <DialogContent className="sm:max-w-[400px]">
           <DialogHeader>
-            <DialogTitle className="text-lg font-bold text-orange-600">Fermeture exceptionnelle</DialogTitle>
+            <DialogTitle className="text-lg font-bold">Fermeture exceptionnelle</DialogTitle>
             <DialogDescription>Programmez une période de congés ou travaux.</DialogDescription>
           </DialogHeader>
-          <div className="space-y-4 py-4">
+          <div className="space-y-4 py-4 text-left">
             <div className="space-y-1.5">
               <Label className="text-xs font-semibold uppercase text-muted-foreground">Motif du congé</Label>
               <Input value={newClosureData.description} onChange={e => setNewClosureData({...newClosureData, description: e.target.value})} placeholder="ex: Vacances d'hiver" className="font-medium" />
             </div>
+            
             <div className="grid grid-cols-2 gap-4">
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold uppercase text-muted-foreground">Date de début</Label>
-                <Input type="date" value={newClosureData.start_date} onChange={e => setNewClosureData({...newClosureData, start_date: e.target.value})} className="font-bold" />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !newClosureData.start_date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {newClosureData.start_date ? format(newClosureData.start_date, "PPP", { locale: fr }) : <span>Choisir une date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={newClosureData.start_date}
+                      onSelect={(date) => setNewClosureData({...newClosureData, start_date: date})}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
+
               <div className="space-y-1.5">
                 <Label className="text-xs font-semibold uppercase text-muted-foreground">Date de fin</Label>
-                <Input type="date" value={newClosureData.end_date} onChange={e => setNewClosureData({...newClosureData, end_date: e.target.value})} className="font-bold" />
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant={"outline"}
+                      className={cn(
+                        "w-full justify-start text-left font-normal",
+                        !newClosureData.end_date && "text-muted-foreground"
+                      )}
+                    >
+                      <CalendarIcon className="mr-2 h-4 w-4" />
+                      {newClosureData.end_date ? format(newClosureData.end_date, "PPP", { locale: fr }) : <span>Choisir une date</span>}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="start">
+                    <Calendar
+                      mode="single"
+                      selected={newClosureData.end_date}
+                      onSelect={(date) => setNewClosureData({...newClosureData, end_date: date})}
+                      initialFocus
+                    />
+                  </PopoverContent>
+                </Popover>
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsClosureDialogOpen(false)}>Annuler</Button>
-            <Button onClick={handleAddClosureSubmit} className="bg-orange-600 hover:bg-orange-700 text-white font-bold">Enregistrer</Button>
+            <Button onClick={handleAddClosureSubmit} className="font-bold">Enregistrer</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -827,20 +887,17 @@ export const Resources = () => {
           <AlertDialogHeader>
             <div className="flex items-center gap-3 mb-2">
               <div className="p-2 bg-destructive/10 rounded-full text-destructive shadow-inner"><AlertTriangle className="h-6 w-6" /></div>
-              <AlertDialogTitle className="text-xl font-bold tracking-tight">{alertConfig.title}</AlertDialogTitle>
+              <AlertDialogTitle>{alertConfig.title}</AlertDialogTitle>
             </div>
-            <AlertDialogDescription className="text-sm font-medium text-muted-foreground leading-relaxed">
-              {alertConfig.description}
-            </AlertDialogDescription>
+            <AlertDialogDescription className="text-sm font-medium">{alertConfig.description}</AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter className="gap-2 sm:gap-0 pt-4">
             <AlertDialogCancel asChild>
-              <Button variant="ghost" className="font-semibold">Annuler</Button>
+              <Button variant="ghost">Annuler</Button>
             </AlertDialogCancel>
             <AlertDialogAction asChild>
               <Button 
                 variant="destructive" 
-                className="font-bold px-6"
                 onClick={() => { alertConfig.action(); setAlertConfig({...alertConfig, open: false}); }}
               >
                 Confirmer
