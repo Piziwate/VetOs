@@ -1,31 +1,20 @@
-import { useEffect, useState } from "react"
+import { useEffect, useState, useCallback } from "react"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import api from "@/lib/api"
-
-interface Setting {
-  key: string
-  value: any
-  category: string
-  sub_category: string
-  description: string
-}
+import type { Setting } from "@/types/resource"
 
 export const Settings = () => {
   const [settings, setSettings] = useState<Setting[]>([])
-  const [pendingChanges, setPendingChanges] = useState<Record<string, any>>({})
+  const [pendingChanges, setPendingChanges] = useState<Record<string, string | number | boolean | Record<string, unknown> | Array<unknown>>>({})
   const [activeCategory, setActiveCategory] = useState<string>("operational")
   const [activeSubCategory, setActiveSubCategory] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
 
-  useEffect(() => {
-    fetchSettings()
-  }, [])
-
-  const fetchSettings = async () => {
+  const fetchSettings = useCallback(async () => {
     try {
       const response = await api.get("/settings/")
       setSettings(response.data)
@@ -34,9 +23,13 @@ export const Settings = () => {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  const handleFieldChange = (key: string, value: any) => {
+  useEffect(() => {
+    fetchSettings()
+  }, [fetchSettings])
+
+  const handleFieldChange = (key: string, value: string | number | boolean | Record<string, unknown> | Array<unknown>) => {
     setPendingChanges(prev => ({ ...prev, [key]: value }))
   }
 
@@ -77,17 +70,17 @@ export const Settings = () => {
     settings.find(s => s.key === key)?.category === activeCategory
   )
 
-  if (loading) return <div>Chargement des paramètres...</div>
+  if (loading) return <div className="flex items-center justify-center min-h-[400px] text-muted-foreground italic">Chargement des paramètres...</div>
 
   return (
-    <div className="flex flex-col gap-8 max-w-4xl">
+    <div className="flex flex-col gap-6">
       <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">Paramètres</h1>
-          <p className="text-muted-foreground">Gérez la configuration de votre cabinet et les paramètres techniques.</p>
+        <div className="space-y-1">
+          <h2 className="text-2xl font-bold tracking-tight">Paramètres</h2>
+          <p className="text-sm text-muted-foreground">Gérez la configuration de votre cabinet et les paramètres techniques.</p>
         </div>
         {hasChanges && (
-          <Button onClick={handleSave} disabled={saving}>
+          <Button onClick={handleSave} disabled={saving} size="sm">
             {saving ? "Enregistrement..." : "Enregistrer les modifications"}
           </Button>
         )}
@@ -166,7 +159,7 @@ export const Settings = () => {
                       <div className="flex gap-4">
                         <Input 
                           id={setting.key}
-                          value={pendingChanges[setting.key] !== undefined ? pendingChanges[setting.key] : setting.value}
+                          value={pendingChanges[setting.key] !== undefined ? String(pendingChanges[setting.key]) : String(setting.value)}
                           onChange={(e) => handleFieldChange(setting.key, e.target.value)}
                           className="max-w-md"
                         />
@@ -187,7 +180,7 @@ export const Settings = () => {
           )}
 
           {filteredSettings.length === 0 && (
-            <p className="text-sm text-muted-foreground italic">Aucun paramètre trouvé dans cette catégorie.</p>
+            <p className="text-sm text-muted-foreground italic text-center py-12 border-2 border-dashed rounded-xl">Aucun paramètre trouvé dans cette catégorie.</p>
           )}
         </div>
       </div>

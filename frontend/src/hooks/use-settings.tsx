@@ -1,33 +1,27 @@
-import React, { createContext, useContext, useState, useEffect } from "react"
+/* eslint-disable react-refresh/only-export-components */
+import React, { createContext, useContext, useState, useEffect, useCallback } from "react"
 import api from "@/lib/api"
-
-interface Setting {
-  key: string
-  value: any
-  category: string
-  sub_category: string
-  description: string
-}
+import type { Clinic, Setting } from "@/types/resource"
 
 interface SettingsContextType {
   settings: Setting[]
-  getSetting: (key: string) => any
+  getSetting: (key: string) => string | number | boolean | Record<string, unknown> | Array<unknown>
   isLoading: boolean
   refreshSettings: () => Promise<void>
-  activeClinic: any
-  setActiveClinic: (clinic: any) => void
-  clinics: any[]
+  activeClinic: Clinic | null
+  setActiveClinic: (clinic: Clinic | null) => void
+  clinics: Clinic[]
 }
 
 const SettingsContext = createContext<SettingsContextType | undefined>(undefined)
 
 export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [settings, setSettings] = useState<Setting[]>([])
-  const [clinics, setClinics] = useState<any[]>([])
-  const [activeClinic, setActiveClinicState] = useState<any>(null)
+  const [clinics, setClinics] = useState<Clinic[]>([])
+  const [activeClinic, setActiveClinicState] = useState<Clinic | null>(null)
   const [isLoading, setIsLoading] = useState(true)
 
-  const fetchInitialData = async () => {
+  const fetchInitialData = useCallback(async () => {
     try {
       const [settingsRes, clinicsRes] = await Promise.all([
         api.get("/settings/"),
@@ -36,41 +30,49 @@ export const SettingsProvider: React.FC<{ children: React.ReactNode }> = ({ chil
       setSettings(settingsRes.data)
       setClinics(clinicsRes.data)
       
-      // Load active clinic from localStorage or take the first one
       const storedClinicId = localStorage.getItem("activeClinicId")
       if (storedClinicId) {
-        const found = clinicsRes.data.find((c: any) => c.id === parseInt(storedClinicId))
-        if (found) setActiveClinicState(found)
-        else if (clinicsRes.data.length > 0) setActiveClinic(clinicsRes.data[0])
+        const found = clinicsRes.data.find((c: Clinic) => c.id === parseInt(storedClinicId))
+        if (found) {
+          setActiveClinicState(found)
+        } else if (clinicsRes.data.length > 0) {
+          const first = clinicsRes.data[0]
+          setActiveClinicState(first)
+          localStorage.setItem("activeClinicId", first.id.toString())
+        }
       } else if (clinicsRes.data.length > 0) {
-        setActiveClinic(clinicsRes.data[0])
+        const first = clinicsRes.data[0]
+        setActiveClinicState(first)
+        localStorage.setItem("activeClinicId", first.id.toString())
       }
     } catch (error) {
       console.error("Failed to load initial settings/clinics", error)
     } finally {
       setIsLoading(false)
     }
-  }
+  }, [])
 
   useEffect(() => {
     fetchInitialData()
-  }, [])
+  }, [fetchInitialData])
 
-  const setActiveClinic = (clinic: any) => {
+  const setActiveClinic = useCallback((clinic: Clinic | null) => {
     setActiveClinicState(clinic)
     if (clinic) localStorage.setItem("activeClinicId", clinic.id.toString())
     else localStorage.removeItem("activeClinicId")
-  }
+  }, [])
+
+  const getSetting = useCallback((key: string) => {
+    const setting = settings.find(s => s.key === key)
+    return setting ? setting.value : ""
+  }, [settings])
 
   useEffect(() => {
     const companyName = getSetting("company_name")
-    document.title = companyName ? `${companyName} | VetOS` : "VetOS - Practice Management"
-  }, [settings])
-
-  const getSetting = (key: string) => {
-    const setting = settings.find(s => s.key === key)
-    return setting ? setting.value : ""
-  }
+    document.title = companyName && typeof companyName === 'string' 
+      ? `${companyName} | VetOS` 
+      : "VetOS - Practice Management"
+  }, [getSetting])
 
   return (
     <SettingsContext.Provider value={{ 

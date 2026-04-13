@@ -33,9 +33,9 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const { t } = useTranslation()
   const { getSetting } = useSettings()
 
-  const practiceName = getSetting("practice_name")
-  const practiceWebsite = getSetting("practice_website")
-  const displayName = practiceName || t("app_name")
+  const practiceName = getSetting("practice_name") as string
+  const practiceWebsite = getSetting("practice_website") as string
+  const displayName = practiceName || (t("app_name") as string)
 
   const data = {
     user: {

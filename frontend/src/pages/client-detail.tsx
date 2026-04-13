@@ -57,11 +57,7 @@ export function ClientDetail() {
   const [client, setClient] = React.useState<Client | null>(null)
   const [loading, setLoading] = React.useState(true)
 
-  React.useEffect(() => {
-    fetchClient()
-  }, [id])
-
-  const fetchClient = async () => {
+  const fetchClient = React.useCallback(async () => {
     try {
       const response = await api.get(`/clients/${id}`)
       setClient(response.data)
@@ -70,7 +66,11 @@ export function ClientDetail() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [id])
+
+  React.useEffect(() => {
+    fetchClient()
+  }, [fetchClient])
 
   const handleUpdateFavoriteClinic = async (clinicId: string) => {
     if (!client) return
@@ -97,9 +97,15 @@ export function ClientDetail() {
 
   if (!client) {
     return (
-      <div className="flex flex-col items-center justify-center p-12">
-        <h2 className="text-xl font-semibold">Client non trouvé</h2>
-        <Button asChild variant="link">
+      <div className="flex flex-col items-center justify-center p-12 text-center space-y-4">
+        <div className="p-4 bg-accent/50 rounded-full">
+          <User className="h-12 w-12 text-muted-foreground" />
+        </div>
+        <div className="space-y-1">
+          <h2 className="text-xl font-semibold">Client non trouvé</h2>
+          <p className="text-sm text-muted-foreground">Le client demandé n'existe pas ou a été supprimé.</p>
+        </div>
+        <Button asChild variant="outline">
           <Link to="/clients">Retour à la liste</Link>
         </Button>
       </div>
@@ -107,7 +113,7 @@ export function ClientDetail() {
   }
 
   return (
-    <div className="flex flex-col gap-6 max-w-6xl mx-auto">
+    <div className="flex flex-col gap-6">
       <div className="flex items-center gap-4">
         <Button variant="outline" size="icon" asChild className="h-8 w-8">
           <Link to="/clients">
@@ -132,8 +138,8 @@ export function ClientDetail() {
         <div className="lg:col-span-1 space-y-6">
           <Card>
             <CardHeader className="pb-4 border-b bg-accent/5">
-              <CardTitle className="flex items-center gap-2 text-md font-semibold">
-                <User className="h-4 w-4 text-primary" />
+              <CardTitle className="flex items-center gap-2 text-md font-semibold text-primary">
+                <User className="h-4 w-4" />
                 Coordonnées
               </CardTitle>
             </CardHeader>
@@ -166,14 +172,14 @@ export function ClientDetail() {
           </Card>
 
           {/* Location / Multi-site Card */}
-          <Card className="border-primary/20 shadow-sm">
+          <Card className="border-primary/20 shadow-sm overflow-hidden">
             <CardHeader className="pb-4 border-b bg-primary/5">
-              <CardTitle className="flex items-center gap-2 text-md font-semibold">
-                <Building2 className="h-4 w-4 text-primary" />
+              <CardTitle className="flex items-center gap-2 text-md font-semibold text-primary">
+                <Building2 className="h-4 w-4" />
                 Préférences de site
               </CardTitle>
             </CardHeader>
-            <CardContent className="pt-6 space-y-4">
+            <CardContent className="pt-6 space-y-4 text-left">
               <div className="space-y-2">
                 <Label className="text-[10px] font-bold uppercase text-muted-foreground">Clinique habituelle</Label>
                 <Select 
@@ -204,8 +210,8 @@ export function ClientDetail() {
         <Card className="lg:col-span-2">
           <CardHeader className="flex flex-row items-center justify-between pb-4 border-b">
             <div className="grid gap-1">
-              <CardTitle className="flex items-center gap-2 text-md font-semibold">
-                <PawPrint className="h-4 w-4 text-primary" />
+              <CardTitle className="flex items-center gap-2 text-md font-semibold text-primary">
+                <PawPrint className="h-4 w-4" />
                 Patients
               </CardTitle>
               <CardDescription className="text-xs">
