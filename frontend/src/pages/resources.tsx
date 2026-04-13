@@ -212,7 +212,9 @@ export const Resources = () => {
     try {
       await api.put(`/resources/rooms/${roomId}`, { type })
       const updatedRooms = activeClinic.rooms.map(r => r.id === roomId ? { ...r, type } : r)
-      setActiveClinic({ ...activeClinic, rooms: updatedRooms })
+      const updatedClinic = { ...activeClinic, rooms: updatedRooms }
+      setActiveClinic(updatedClinic)
+      setClinics(prev => prev.map(c => c.id === activeClinic.id ? updatedClinic : c))
     } catch (error) {
       console.error("Failed to update room type", error)
     }
@@ -228,7 +230,9 @@ export const Resources = () => {
           await api.delete(`/resources/rooms/${roomId}`)
           if (activeClinic) {
             const updatedRooms = activeClinic.rooms.filter(r => r.id !== roomId)
-            setActiveClinic({ ...activeClinic, rooms: updatedRooms })
+            const updatedClinic = { ...activeClinic, rooms: updatedRooms }
+            setActiveClinic(updatedClinic)
+            setClinics(prev => prev.map(c => c.id === activeClinic.id ? updatedClinic : c))
           }
           if (activeRoomId === roomId) setActiveRoomId(null)
         } catch (error) {
@@ -248,7 +252,9 @@ export const Resources = () => {
       const updatedRooms = activeClinic.rooms.map(r => 
         r.id === activeRoomId ? { ...r, slots: [...(r.slots || []), response.data] } : r
       )
-      setActiveClinic({ ...activeClinic, rooms: updatedRooms })
+      const updatedClinic = { ...activeClinic, rooms: updatedRooms }
+      setActiveClinic(updatedClinic)
+      setClinics(prev => prev.map(c => c.id === activeClinic.id ? updatedClinic : c))
       setIsSlotDialogOpen(false)
       setNewSlotData({ box_reference: "", type: "cage" })
     } catch (error) {
@@ -268,7 +274,9 @@ export const Resources = () => {
             const updatedRooms = activeClinic.rooms.map(r => 
               r.id === roomId ? { ...r, slots: r.slots.filter(s => s.id !== slotId) } : r
             )
-            setActiveClinic({ ...activeClinic, rooms: updatedRooms })
+            const updatedClinic = { ...activeClinic, rooms: updatedRooms }
+            setActiveClinic(updatedClinic)
+            setClinics(prev => prev.map(c => c.id === activeClinic.id ? updatedClinic : c))
           }
         } catch (error) {
           console.error("Failed to delete slot", error)
@@ -302,10 +310,12 @@ export const Resources = () => {
         end_date: format(newClosureData.end_date, "yyyy-MM-dd"),
         clinic_id: activeClinic.id
       })
-      setActiveClinic({
+      const updatedClinic = {
         ...activeClinic,
         closures: [...(activeClinic.closures || []), response.data]
-      })
+      }
+      setActiveClinic(updatedClinic)
+      setClinics(prev => prev.map(c => c.id === activeClinic.id ? updatedClinic : c))
       setIsClosureDialogOpen(false)
       setNewClosureData({ description: "", start_date: undefined, end_date: undefined })
     } catch (error) {
@@ -322,10 +332,12 @@ export const Resources = () => {
         try {
           await api.delete(`/resources/closures/${closureId}`)
           if (activeClinic) {
-            setActiveClinic({
+            const updatedClinic = {
               ...activeClinic,
               closures: activeClinic.closures.filter(c => c.id !== closureId)
-            })
+            }
+            setActiveClinic(updatedClinic)
+            setClinics(prev => prev.map(c => c.id === activeClinic.id ? updatedClinic : c))
           }
         } catch (error) {
           console.error("Failed to delete closure", error)
@@ -585,27 +597,27 @@ export const Resources = () => {
                 {/* Horaires */}
                 <Card className="border-none shadow-none bg-accent/5">
                   <CardHeader className="pb-4 border-b border-border/50">
-                    <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <CardTitle className="text-lg font-semibold flex items-center gap-2">
                       <Clock className="h-4 w-4 text-primary" /> Horaires d'ouverture
                     </CardTitle>
-                    <CardDescription className="text-xs">Utilisés pour le moteur de réservation et les agendas.</CardDescription>
+                    <CardDescription className="text-sm">Utilisés pour le moteur de réservation et les agendas.</CardDescription>
                   </CardHeader>
                   <CardContent className="pt-6">
-                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2">
+                    <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3">
                       {(Object.keys(DAYS_FR) as Array<keyof typeof DAYS_FR>).map(day => {
                         const slots = activeClinic.opening_hours?.[day] || []
                         return (
-                          <div key={day} className="flex flex-col gap-1.5 p-2 rounded-md border border-border/50 bg-background/50 group">
-                            <p className="text-[10px] font-bold uppercase text-muted-foreground/70">{DAYS_FR[day]}</p>
-                            <div className="space-y-1 min-h-[32px] flex flex-col justify-center">
+                          <div key={day} className="flex flex-col gap-2 p-3 rounded-lg border border-border/50 bg-background/50 group">
+                            <p className="text-xs font-bold uppercase text-muted-foreground/70">{DAYS_FR[day]}</p>
+                            <div className="space-y-1.5 min-h-[40px] flex flex-col justify-center">
                               {slots.map((s, idx) => (
-                                <p key={idx} className="text-[10px] font-medium text-center text-primary">{s.open} — {s.close}</p>
+                                <p key={idx} className="text-xs font-semibold text-center text-primary bg-primary/5 py-1 rounded">{s.open} — {s.close}</p>
                               ))}
-                              {slots.length === 0 && <p className="text-[10px] text-muted-foreground/30 text-center uppercase font-bold">Fermé</p>}
+                              {slots.length === 0 && <p className="text-xs text-muted-foreground/30 text-center uppercase font-bold py-1">Fermé</p>}
                             </div>
                             <button 
                               onClick={() => handleOpenHoursDialog(day)}
-                              className="text-[9px] uppercase font-bold text-primary/40 hover:text-primary opacity-0 group-hover:opacity-100 transition-all pt-1 border-t border-border/20 mt-1"
+                              className="text-xs font-bold text-primary/60 hover:text-primary opacity-0 group-hover:opacity-100 transition-all pt-2 border-t border-border/20 mt-1"
                             >
                               Éditer
                             </button>
@@ -620,12 +632,12 @@ export const Resources = () => {
                 <Card className="border-none shadow-none bg-accent/5">
                   <CardHeader className="flex flex-row items-center justify-between pb-4 border-b border-border/50">
                     <div className="space-y-1">
-                      <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                      <CardTitle className="text-lg font-semibold flex items-center gap-2">
                         <CalendarIcon className="h-4 w-4 text-primary" /> Congés & Fermetures
                       </CardTitle>
-                      <CardDescription className="text-xs">Périodes exceptionnelles de fermeture du site.</CardDescription>
+                      <CardDescription className="text-sm">Périodes exceptionnelles de fermeture du site.</CardDescription>
                     </div>
-                    <Button variant="outline" size="sm" className="text-xs h-7" onClick={() => setIsClosureDialogOpen(true)}>
+                    <Button variant="outline" size="sm" className="text-xs h-8" onClick={() => setIsClosureDialogOpen(true)}>
                       <Plus className="h-3.5 w-3.5 mr-2" /> Programmer
                     </Button>
                   </CardHeader>
@@ -633,21 +645,21 @@ export const Resources = () => {
                     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
                       {activeClinic.closures?.map(c => (
                         <div key={c.id} className="flex items-center justify-between p-3 bg-background/50 border border-border rounded-xl transition-all hover:shadow-sm group">
-                          <div className="flex flex-col gap-0.5 text-left">
-                            <span className="text-xs font-semibold">{c.description}</span>
-                            <span className="text-[10px] font-medium text-muted-foreground uppercase">
+                          <div className="flex flex-col gap-1 text-left">
+                            <span className="text-sm font-semibold">{c.description}</span>
+                            <span className="text-xs font-medium text-muted-foreground uppercase tracking-tight">
                               {format(new Date(c.start_date), "dd.MM.yyyy")} — {format(new Date(c.end_date), "dd.MM.yyyy")}
                             </span>
                           </div>
                           <button onClick={() => handleDeleteClosure(c.id)} className="p-1.5 hover:bg-destructive/10 rounded-full text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-all">
-                            <Trash2 className="h-3.5 w-3.5" />
+                            <Trash2 className="h-4 w-4" />
                           </button>
                         </div>
                       ))}
                       {activeClinic.closures?.length === 0 && (
-                        <div className="col-span-full flex flex-col items-center justify-center py-8 text-center border border-dashed rounded-xl space-y-2 opacity-50">
-                          <CalendarIcon className="h-6 w-6 text-muted-foreground/20" />
-                          <p className="text-xs text-muted-foreground">Aucune fermeture programmée.</p>
+                        <div className="col-span-full flex flex-col items-center justify-center py-12 text-center border border-dashed rounded-xl space-y-2 opacity-50">
+                          <CalendarIcon className="h-8 w-8 text-muted-foreground/20" />
+                          <p className="text-sm text-muted-foreground">Aucune fermeture programmée.</p>
                         </div>
                       )}
                     </div>
