@@ -1,4 +1,5 @@
 import { useEffect, useState, useCallback } from "react"
+import { useTranslation } from "react-i18next"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Button } from "@/components/ui/button"
@@ -7,8 +8,9 @@ import api from "@/lib/api"
 import type { Setting } from "@/types/resource"
 
 export const Settings = () => {
+  const { t } = useTranslation()
   const [settings, setSettings] = useState<Setting[]>([])
-  const [pendingChanges, setPendingChanges] = useState<Record<string, string | number | boolean | Record<string, unknown> | Array<unknown>>>({})
+  const [pendingChanges, setPendingChanges] = useState<Record<string, Setting["value"]>>({})
   const [activeCategory, setActiveCategory] = useState<string>("operational")
   const [activeSubCategory, setActiveSubCategory] = useState<string | null>(null)
   const [loading, setLoading] = useState(true)
@@ -29,7 +31,7 @@ export const Settings = () => {
     fetchSettings()
   }, [fetchSettings])
 
-  const handleFieldChange = (key: string, value: string | number | boolean | Record<string, unknown> | Array<unknown>) => {
+  const handleFieldChange = (key: string, value: Setting["value"]) => {
     setPendingChanges(prev => ({ ...prev, [key]: value }))
   }
 
@@ -45,10 +47,10 @@ export const Settings = () => {
         pendingChanges[s.key] !== undefined ? { ...s, value: pendingChanges[s.key] } : s
       ))
       setPendingChanges({})
-      alert("Paramètres enregistrés avec succès !")
+      alert(t("settings.save_success"))
     } catch (error) {
       console.error("Failed to save settings", error)
-      alert("Erreur lors de l'enregistrement.")
+      alert(t("settings.save_error"))
     } finally {
       setSaving(false)
     }
@@ -58,7 +60,7 @@ export const Settings = () => {
   
   // Group by sub_category
   const groupedSettings = filteredSettings.reduce((acc, setting) => {
-    const subCat = setting.sub_category || "Général"
+    const subCat = setting.sub_category || t("settings.general")
     if (!acc[subCat]) acc[subCat] = []
     acc[subCat].push(setting)
     return acc
@@ -70,18 +72,18 @@ export const Settings = () => {
     settings.find(s => s.key === key)?.category === activeCategory
   )
 
-  if (loading) return <div className="flex items-center justify-center min-h-[400px] text-muted-foreground italic">Chargement des paramètres...</div>
+  if (loading) return <div className="flex items-center justify-center min-h-[400px] text-muted-foreground italic">{t("clients.loading")}</div>
 
   return (
     <div className="flex flex-col gap-6">
       <div className="flex justify-between items-center">
         <div className="space-y-1">
-          <h2 className="text-2xl font-bold tracking-tight">Paramètres</h2>
-          <p className="text-sm text-muted-foreground">Gérez la configuration de votre cabinet et les paramètres techniques.</p>
+          <h2 className="text-2xl font-bold tracking-tight">{t("settings.title")}</h2>
+          <p className="text-sm text-muted-foreground">{t("settings.description")}</p>
         </div>
         {hasChanges && (
           <Button onClick={handleSave} disabled={saving} size="sm">
-            {saving ? "Enregistrement..." : "Enregistrer les modifications"}
+            {saving ? t("settings.saving") : t("settings.save_changes")}
           </Button>
         )}
       </div>
@@ -97,7 +99,7 @@ export const Settings = () => {
               }}
               className={`text-left px-3 py-1.5 rounded-md text-sm transition-colors ${activeCategory === "operational" ? "bg-accent text-accent-foreground font-semibold" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"}`}
             >
-              Opérationnel
+              {t("settings.operational")}
             </button>
             {activeCategory === "operational" && (
               <div className="ml-4 flex flex-col gap-1 border-l pl-2">
@@ -122,7 +124,7 @@ export const Settings = () => {
               }}
               className={`text-left px-3 py-1.5 rounded-md text-sm transition-colors ${activeCategory === "technical" ? "bg-accent text-accent-foreground font-semibold" : "text-muted-foreground hover:bg-accent/50 hover:text-accent-foreground"}`}
             >
-              Technique
+              {t("settings.technical")}
             </button>
             {activeCategory === "technical" && (
               <div className="ml-4 flex flex-col gap-1 border-l pl-2">
@@ -174,13 +176,13 @@ export const Settings = () => {
           {hasChanges && (
             <div className="pt-4 border-t">
               <Button onClick={handleSave} disabled={saving} className="w-full sm:w-auto">
-                {saving ? "Enregistrement..." : "Enregistrer les modifications"}
+                {saving ? t("settings.saving") : t("settings.save_changes")}
               </Button>
             </div>
           )}
 
           {filteredSettings.length === 0 && (
-            <p className="text-sm text-muted-foreground italic text-center py-12 border-2 border-dashed rounded-xl">Aucun paramètre trouvé dans cette catégorie.</p>
+            <p className="text-sm text-muted-foreground italic text-center py-12 border-2 border-dashed rounded-xl">{t("settings.no_settings")}</p>
           )}
         </div>
       </div>

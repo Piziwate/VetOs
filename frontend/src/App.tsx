@@ -11,9 +11,10 @@ import "./i18n"
 import { Dashboard } from "./pages/dashboard"
 import { Clients } from "./pages/clients"
 import { ClientDetail } from "./pages/client-detail"
-import { Login } from "./pages/Login"
+import { Login } from "./pages/login"
 import { Settings } from "./pages/settings"
 import { Resources } from "./pages/resources"
+import { Staff } from "./pages/staff"
 
 const ProtectedRoute = ({ children }: { children: React.ReactNode }) => {
   const token = localStorage.getItem("token")
@@ -89,6 +90,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <Resources />
+                </ProtectedRoute>
+              } 
+            />
+
+            <Route 
+              path="/staff" 
+              element={
+                <ProtectedRoute>
+                  <Staff />
                 </ProtectedRoute>
               } 
             />

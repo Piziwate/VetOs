@@ -71,9 +71,14 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: Settings2,
       },
       {
-        title: "Ressources",
+        title: t("resources.tabs.infrastructure"),
         url: "/resources",
         icon: Building2,
+      },
+      {
+        title: t("menu.staff"),
+        url: "/staff",
+        icon: Users,
       },
     ],
     navSecondary: [
@@ -95,7 +100,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         icon: FileText,
       },
       {
-        name: "Statistiques",
+        name: t("menu.stats"),
         url: "/stats",
         icon: PieChart,
       },
