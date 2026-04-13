@@ -1,7 +1,7 @@
 import * as React from "react"
 import { useLocation, Link } from "react-router-dom"
 import { useTranslation } from "react-i18next"
-import { PanelLeft } from "lucide-react"
+import { PanelLeft, Building2, ChevronDown } from "lucide-react"
 
 import { SearchForm } from "@/components/search-form"
 import {
@@ -15,9 +15,17 @@ import {
 import { Button } from "@/components/ui/button"
 import { Separator } from "@/components/ui/separator"
 import { useSidebar } from "@/components/ui/sidebar"
+import { useSettings } from "@/hooks/use-settings"
+import { 
+  DropdownMenu, 
+  DropdownMenuContent, 
+  DropdownMenuItem, 
+  DropdownMenuTrigger 
+} from "@/components/ui/dropdown-menu"
 
 export function SiteHeader() {
   const { toggleSidebar } = useSidebar()
+  const { clinics, activeClinic, setActiveClinic } = useSettings()
   const location = useLocation()
   const { t } = useTranslation()
   const pathnames: string[] = location.pathname.split("/").filter((x: string) => x)
@@ -68,6 +76,34 @@ export function SiteHeader() {
           </BreadcrumbList>
         </Breadcrumb>
         <SearchForm className="w-full sm:ml-auto sm:w-auto" />
+        
+        <Separator orientation="vertical" className="mx-2 h-4 hidden sm:block" />
+        
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="sm" className="gap-2 px-2 h-8 font-semibold text-primary hover:bg-primary/5 focus-visible:ring-0">
+              <Building2 className="h-4 w-4" />
+              <span className="hidden md:inline">{activeClinic?.name || "Sélectionner un site"}</span>
+              <ChevronDown className="h-3 w-3 opacity-50" />
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-64">
+            <div className="px-2 py-1.5 text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Passer à un autre site</div>
+            {clinics.map((clinic) => (
+              <DropdownMenuItem 
+                key={clinic.id} 
+                onClick={() => setActiveClinic(clinic)}
+                className={`flex flex-col items-start gap-0.5 py-2 cursor-pointer ${activeClinic?.id === clinic.id ? "bg-accent" : ""}`}
+              >
+                <span className="font-bold">{clinic.name}</span>
+                <span className="text-[10px] text-muted-foreground truncate w-full">{clinic.address || "Pas d'adresse renseignée"}</span>
+              </DropdownMenuItem>
+            ))}
+            {clinics.length === 0 && (
+              <DropdownMenuItem disabled>Aucun site configuré</DropdownMenuItem>
+            )}
+          </DropdownMenuContent>
+        </DropdownMenu>
       </div>
     </header>
   )
